@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+veriqen-env/
+experiments/agentdojo/results/live/
+.env
