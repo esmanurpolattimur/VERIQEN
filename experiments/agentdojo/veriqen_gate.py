@@ -154,9 +154,10 @@ class Decision:
 class Gate:
     """system ∈ {B0, B1, B2, B3, NAIVE, VERIQEN, VERIQEN-A}
     VERIQEN   : anahtar kökeni, 'structured' güven (v1)
-    VERIQEN-A : anahtar kökeni, 'authored' güven (v2, yazar farkındalıklı)"""
+    VERIQEN-A : anahtar kökeni, 'authored' güven (v2, yazar farkındalıklı)
+    VERIQEN-S : sıkı mod — hakem yalnızca değer kullanıcının isteğinde açıkça geçiyorsa atlanır"""
 
-    SYSTEMS = ("B0", "B1", "B2", "B3", "NAIVE", "VERIQEN", "VERIQEN-A")
+    SYSTEMS = ("B0", "B1", "B2", "B3", "NAIVE", "VERIQEN", "VERIQEN-A", "VERIQEN-S")
 
     def __init__(self, system: str, judge=None, review_policy: str = "deny"):
         assert system in self.SYSTEMS, system
@@ -167,7 +168,7 @@ class Gate:
 
     # --- yaşam döngüsü ---
     def start(self, user_prompt: str, env) -> None:
-        mode = "authored" if self.system == "VERIQEN-A" else "structured"
+        mode = "authored" if self.system in ("VERIQEN-A", "VERIQEN-S") else "structured"
         self.prov = ProvenanceTracker.from_environment(user_prompt, env, mode)
         self.balance = float(env.bank_account.balance)
         self.log = []
@@ -180,6 +181,8 @@ class Gate:
         o = self.prov.origin(value)
         if self.system == "NAIVE":                     # köken körü: metinde geçmesi yeter
             return o in (USER, TRUSTED_STATE, TOOL_TEXT)
+        if self.system == "VERIQEN-S":                 # sıkı: yalnızca kullanıcı isteği
+            return o == USER
         return o in (USER, TRUSTED_STATE)               # VERIQEN: anahtar kökeni
 
     def _floor(self, function: str, args: dict) -> Decision | None:

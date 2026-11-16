@@ -87,7 +87,7 @@ Kullanıcı / müşteri ──► Ajan (LLM) ──► VERIQEN Gateway ──►
 | D7 | **Yinelenen istek:** Aynı iadeyi tekrar göndermek | G1 | C1 |
 | D8 | **Zaman aşımı istismarı:** Zaman aşımında varsayılanın "geçir" olmasını umarak yavaşlatmak | G1, G3 | C5 |
 | D10 | **Durum ekme:** Kullanıcıya küçük bir transfer gönderip kendi IBAN'ını geçmiş işlemlerin 'gönderen' alanına sokmak; böylece 'bilinen alıcı' görünmek. **(12 §3b: v1'i kırdı, v2 dayandı.)** | G2 | C4 |
-| D11 | **Ele geçirilmiş geçmiş alıcı:** Kullanıcının daha önce ödeme yaptığı bir hesabı kontrol eden saldırganın, limit altı tutarları hakemsiz çekmesi. *(Henüz test edilmedi.)* | G1, G2 | C1 + ek varsayım |
+| D11 | **Ele geçirilmiş geçmiş alıcı:** Kullanıcının daha önce ödeme yaptığı bir hesabı kontrol eden saldırganın, limit altı tutarları hakemsiz çekmesi. **(12 §3c: VERIQEN-A kırıldı (%66.7); VERIQEN-S %10.5. Kalan açık: kullanıcının adını verdiği alıcıya istenmemiş ek işlem.)** | G1, G2 | C1 + ek varsayım |
 | D9 | **Uydurulmuş kanıt:** Ajana sistemde olmayan bir "yönetici onay kodu" beyan ettirmek | G1 | C1 |
 
 ## 7. Güvenlik özellikleri (VERIQEN'in vaat ettikleri)

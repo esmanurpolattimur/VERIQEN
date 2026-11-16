@@ -11,6 +11,7 @@ VERIQEN kapısını AgentDojo'nun **Banking** paketine (v1.2.1; 16 kullanıcı g
 | NAIVE | Taban + riske göre hakem; alıcı "araç çıktısında geçiyorsa" bilinen sayılır (köken körü) |
 | VERIQEN | Taban + riske göre hakem; alıcı yalnızca **kullanıcı isteğinden veya güvenilir yapısal alandan** geliyorsa bilinen sayılır (anahtar kökeni, v1) |
 | VERIQEN-A | VERIQEN + **yazar kökeni:** yalnızca değerini kullanıcının belirlediği alanlar (kullanıcının gönderdiği/zamanladığı işlemlerin alıcıları) güvenilir sayılır (v2) |
+| VERIQEN-S | Sıkı mod: hakem yalnızca alıcı kullanıcının isteğinde açıkça geçiyorsa atlanır |
 
 ## Kurulum
 
@@ -23,8 +24,9 @@ pip install -r requirements.txt
 ## 1) Çevrimdışı değerlendirme (LLM ve internet gerekmez)
 
 ```bash
-python replay_eval.py --repeats 20                                   # ~2 dk -> results/replay/
+python replay_eval.py --repeats 20 --attack-mode standard --out results/replay_standard   # ~2 dk
 python replay_eval.py --repeats 20 --attack-mode planting --out results/replay_planting   # durum ekme saldırısı
+python replay_eval.py --repeats 20 --attack-mode payee    --out results/replay_payee      # ele geçirilmiş geçmiş alıcı
 python -m tests.smoke_live_pipeline         # canlı hattın ağsız duman testi
 ```
 
@@ -52,6 +54,6 @@ python run_live.py --provider groq --model <model-adı> --system all --limit-use
 | `replay_eval.py` | Çevrimdışı değerlendirme |
 | `run_live.py` | Gerçek LLM ile değerlendirme |
 | `tests/smoke_live_pipeline.py` | Ağsız uçtan uca test |
-| `results/replay/` | Çevrimdışı sonuçlar |
+| `results/replay_*/` | Çevrimdışı sonuçlar (üç saldırı modu) |
 
 Sonuçların yorumu: `docs/research/12-agentdojo-replay-results.md`.
