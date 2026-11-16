@@ -12,6 +12,8 @@ VERIQEN kapısını AgentDojo'nun **Banking** paketine (v1.2.1; 16 kullanıcı g
 | VERIQEN | Taban + riske göre hakem; alıcı yalnızca **kullanıcı isteğinden veya güvenilir yapısal alandan** geliyorsa bilinen sayılır (anahtar kökeni, v1) |
 | VERIQEN-A | VERIQEN + **yazar kökeni:** yalnızca değerini kullanıcının belirlediği alanlar (kullanıcının gönderdiği/zamanladığı işlemlerin alıcıları) güvenilir sayılır (v2) |
 | VERIQEN-S | Sıkı mod: hakem yalnızca alıcı kullanıcının isteğinde açıkça geçiyorsa atlanır |
+| VERIQEN-AI / VERIQEN-SI | A veya S + **işlem–niyet bağlama:** kullanıcının istemediği işlem türü ve aynı alıcıya tekrar işlem hakeme gider (`--intent keyword` veya `--intent llm`) |
+| VERIQEN-SI\* | S + kâhin niyet (üst sınır; yalnız `replay_eval.py`) |
 
 ## Kurulum
 
@@ -44,6 +46,7 @@ python run_live.py --provider groq --model <model-adı> --system all --limit-use
 - Model adlarını sağlayıcının **güncel** listesinden seçin; ücretsiz modeller sık değişiyor.
 - Kota dolunca istemci otomatik bekleyip yeniden dener. Yarım kalan koşu, AgentDojo günlükleri sayesinde kaldığı yerden devam eder (`results/live/`).
 - Hakem için farklı bir model/sağlayıcı: `--judge-provider gemini --judge-model <model>`.
+- Önerilen sistem: `--system VERIQEN-SI --intent llm` (niyet, yalnızca kullanıcı isteğini gören ayrı bir LLM çağrısıyla çıkarılır).
 - **Ücretsiz katman için öneri:** önce `--limit-user-tasks 2` ile deneyin. Tam paket (16 × 9 = 144 saldırı bölümü + 16 zararsız bölüm) sistem başına birkaç yüz–birkaç bin LLM çağrısı tutar; birkaç güne yayın.
 
 ## Dosyalar

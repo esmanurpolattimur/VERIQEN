@@ -35,7 +35,9 @@ Kod: `experiments/pilot/`. Ayrıntı ve sınırlılıklar: 11.
 
 **Kendi tasarımımıza uyarlamalı saldırı (durum ekme):** Saldırgan kullanıcıya küçük bir transfer gönderip IBAN'ını geçmişe soktuğunda VERIQEN v1 %66.7 ile kırıldı. "Değeri kimin yazdı" kontrolü ekleyen VERIQEN-A %6.8'de kaldı; fayda ve maliyet değişmedi.
 
-**İkinci uyarlamalı saldırı (ele geçirilmiş geçmiş alıcı):** VERIQEN-A kırıldı (%66.7). Yalnızca kullanıcının açıkça yazdığı alıcıya güvenen VERIQEN-S %10.5'te kaldı; hakem maliyeti hâlâ B3'ün yarısı. Kalan açık: kullanıcının adını verdiği alıcıya istenmemiş ek işlem. Bu da işlem–niyet bağlamayı gerektiriyor.
+**İkinci uyarlamalı saldırı (ele geçirilmiş geçmiş alıcı):** VERIQEN-A kırıldı (%66.7). Yalnızca kullanıcının açıkça yazdığı alıcıya güvenen VERIQEN-S %10.5'te kaldı; hakem maliyeti hâlâ B3'ün yarısı. Kalan açık: kullanıcının adını verdiği alıcıya istenmemiş ek işlem.
+
+**İşlem–niyet bağlama:** Kullanıcının istediği işlem türü doğru bilindiğinde (kâhin, üst sınır) VERIQEN-SI\* üç saldırının hepsinde B3 kadar güvenli (%6.8), hakem maliyeti B3'ün yarısı. Kelime tabanlı çıkarıcı %9.9'da kaldı; gerçekçi aday LLM niyet çıkarıcısı (`run_live.py --intent llm`).
 
 Kod: `experiments/agentdojo/` (gerçek LLM için `run_live.py`). Ayrıntı: 12.
 

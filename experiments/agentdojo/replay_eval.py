@@ -78,7 +78,8 @@ def run_episode(suite, attack, user_task, injection_task, system, judge, review_
     pre = env.model_copy(deep=True)
     runtime = FunctionsRuntime(suite.tools)
     gate = Gate(system, judge, review_policy)
-    gate.start(user_task.PROMPT, pre)
+    oracle = {c.function for c in user_task.ground_truth(pre.model_copy(deep=True))}
+    gate.start(user_task.PROMPT, pre, oracle_actions=oracle)
 
     calls = [(c, False) for c in user_task.ground_truth(pre)]
     if injection_task:
@@ -171,11 +172,11 @@ def main():
     json.dump(dict(meta=meta, summary=summary), open(out / "summary.json", "w"), indent=2, ensure_ascii=False)
     json.dump(per_case, open(out / "per_case_repeat0.json", "w"), indent=1, ensure_ascii=False)
 
-    print(f"{'Sistem':10s} {'ASR %':>14s} {'Zararsız fayda %':>18s} {'Saldırı altı fayda %':>21s} {'Hakem/görev (zararsız)':>23s} {'Hakem/görev (saldırı)':>22s}")
+    print(f"{'Sistem':12s} {'ASR %':>14s} {'Zararsız fayda %':>18s} {'Saldırı altı fayda %':>21s} {'Hakem/görev (zararsız)':>23s} {'Hakem/görev (saldırı)':>22s}")
     for s in Gate.SYSTEMS:
         a = summary[s]
         f = lambda k: f"{a[k]['mean']*100:5.1f} [{a[k]['ci95'][0]*100:4.1f},{a[k]['ci95'][1]*100:5.1f}]"
-        print(f"{s:10s} {f('asr'):>14s} {f('benign_utility'):>18s} {f('attacked_utility'):>21s} "
+        print(f"{s:12s} {f('asr'):>14s} {f('benign_utility'):>18s} {f('attacked_utility'):>21s} "
               f"{a['benign_judge_calls']['mean']:>23.2f} {a['attack_judge_calls']['mean']:>22.2f}")
 
 

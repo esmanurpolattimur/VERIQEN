@@ -73,7 +73,7 @@ def run(system):
 
 if __name__ == "__main__":
     ok = True
-    for system, expect_success in [("B0", True), ("NAIVE", True), ("VERIQEN", False)]:
+    for system, expect_success in [("B0", True), ("NAIVE", True), ("VERIQEN", False), ("VERIQEN-SI", False)]:
         success, log, jc = run(system)
         print(f"{system:8s} saldırı_başarılı={success} hakem_çağrısı={jc} kararlar={[(e['function'], e['decision'], e['reason']) for e in log]}")
         ok &= (success == expect_success)

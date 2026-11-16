@@ -35,7 +35,7 @@ from agentdojo.benchmark import benchmark_suite_with_injections, benchmark_suite
 from agentdojo.task_suite.load_suites import get_suite
 
 from replay_eval import BENCHMARK_VERSION, StaticImportantInstructions
-from veriqen_gate import Gate, LLMJudge, make_gated_executor
+from veriqen_gate import Gate, LLMJudge, extract_intent_llm, make_gated_executor
 
 PROVIDERS = {
     "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY"),
@@ -53,9 +53,10 @@ def make_client(provider: str) -> openai.OpenAI:
     return openai.OpenAI(base_url=base, api_key=key, max_retries=8, timeout=120)  # 429'da otomatik bekleme
 
 
-def build_pipeline(client, model, system, judge_client, judge_model):
+def build_pipeline(client, model, system, judge_client, judge_model, intent="keyword"):
     judge = LLMJudge(judge_client, judge_model) if system not in ("B0", "B1") else None
-    gate = Gate(system, judge)
+    intent_fn = (lambda p: extract_intent_llm(judge_client, judge_model, p)) if intent == "llm" else None
+    gate = Gate(system, judge, intent_fn=intent_fn)
     llm = OpenAILLM(client, model, temperature=0.0)
     pipe = AgentPipeline([
         SystemMessage(load_system_message(None)), InitQuery(), llm,
@@ -76,6 +77,8 @@ def main():
     ap.add_argument("--injection-tasks", nargs="*", default=None)
     ap.add_argument("--limit-user-tasks", type=int, default=None)
     ap.add_argument("--no-benign", action="store_true", help="saldırısız koşuyu atla")
+    ap.add_argument("--intent", choices=["keyword", "llm"], default="keyword",
+                    help="VERIQEN-AI/SI için niyet çıkarıcı: keyword (LLM'siz) veya llm (yalnız kullanıcı isteğini okur)")
     ap.add_argument("--logdir", default="results/live")
     args = ap.parse_args()
 
@@ -83,12 +86,14 @@ def main():
     client = make_client(args.provider)
     jclient = make_client(args.judge_provider) if args.judge_provider else client
     jmodel = args.judge_model or args.model
-    systems = list(Gate.SYSTEMS) if args.system == "all" else [args.system]
+    systems = [x for x in Gate.SYSTEMS if x != "VERIQEN-SI*"] if args.system == "all" else [args.system]
+    if "VERIQEN-SI*" in systems:
+        raise SystemExit("VERIQEN-SI* kâhin niyet kullanır; yalnızca replay_eval.py ile çalışır.")
     utasks = args.user_tasks or list(suite.user_tasks)[: args.limit_user_tasks]
     logdir = Path(args.logdir); logdir.mkdir(parents=True, exist_ok=True)
 
     for system in systems:
-        pipe, gate, judge = build_pipeline(client, args.model, system, jclient, jmodel)
+        pipe, gate, judge = build_pipeline(client, args.model, system, jclient, jmodel, args.intent)
         started = dt.datetime.now().isoformat(timespec="seconds")
         benign = None
         if not args.no_benign:
@@ -96,7 +101,7 @@ def main():
         attacked = benchmark_suite_with_injections(pipe, suite, StaticImportantInstructions(suite), logdir, False,
                                                    utasks, args.injection_tasks, True, BENCHMARK_VERSION)
         res = dict(
-            system=system, provider=args.provider, model=args.model, judge_model=jmodel if judge else None,
+            system=system, intent=args.intent, provider=args.provider, model=args.model, judge_model=jmodel if judge else None,
             started=started, finished=dt.datetime.now().isoformat(timespec="seconds"),
             benchmark_version=BENCHMARK_VERSION, user_tasks=utasks,
             benign_utility={str(k): v for k, v in (benign["utility_results"].items() if benign else [])},
