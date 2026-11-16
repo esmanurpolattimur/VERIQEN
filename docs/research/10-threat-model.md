@@ -86,6 +86,8 @@ Kullanıcı / müşteri ──► Ajan (LLM) ──► VERIQEN Gateway ──►
 | D6 | **Onay sonrası değişim (TOCTOU):** REVIEW onayından sonra tutarı veya alıcıyı değiştirmek; sipariş durumunu kontrol ile yazma arasında değiştirmek | G4, G1 | C1, C4 |
 | D7 | **Yinelenen istek:** Aynı iadeyi tekrar göndermek | G1 | C1 |
 | D8 | **Zaman aşımı istismarı:** Zaman aşımında varsayılanın "geçir" olmasını umarak yavaşlatmak | G1, G3 | C5 |
+| D10 | **Durum ekme:** Kullanıcıya küçük bir transfer gönderip kendi IBAN'ını geçmiş işlemlerin 'gönderen' alanına sokmak; böylece 'bilinen alıcı' görünmek. **(12 §3b: v1'i kırdı, v2 dayandı.)** | G2 | C4 |
+| D11 | **Ele geçirilmiş geçmiş alıcı:** Kullanıcının daha önce ödeme yaptığı bir hesabı kontrol eden saldırganın, limit altı tutarları hakemsiz çekmesi. *(Henüz test edilmedi.)* | G1, G2 | C1 + ek varsayım |
 | D9 | **Uydurulmuş kanıt:** Ajana sistemde olmayan bir "yönetici onay kodu" beyan ettirmek | G1 | C1 |
 
 ## 7. Güvenlik özellikleri (VERIQEN'in vaat ettikleri)
@@ -93,7 +95,7 @@ Kullanıcı / müşteri ──► Ajan (LLM) ──► VERIQEN Gateway ──►
 | # | Özellik | Biçimsel ifade (taslak) | Karşıladığı saldırılar |
 |---|---|---|---|
 | **P1** | **Monoton taban** | Her işlem sınıfı *c* için `plan(x) ⊇ floor(c)`. Yönlendirici tabanın altına plan seçemez. | D1–D4 |
-| **P2** | **Güvenilmeyen kanaldan bağımsız yönlendirme** | Yönlendirici yalnız `TrustedFeature` alır. Güvenilir durumu aynı, güvenilmeyen kanalları farklı iki istek x, x′ için `plan(x) = plan(x′)`. | D1, D2 |
+| **P2** | **Güvenilmeyen kanaldan bağımsız yönlendirme** (anahtar kökeni + yazar kökeni, bkz. 11 ve 12 §3b) | Yönlendirici yalnız `TrustedFeature` alır. Güvenilir durumu aynı, güvenilmeyen kanalları farklı iki istek x, x′ için `plan(x) = plan(x′)`. | D1, D2 |
 | **P3** | **Güvenli varsayılan** | Kaynak erişilemez, zaman aşımı veya belirsizlik durumunda karar ∈ {REVIEW, BLOCK}; asla ALLOW. Kaynak sağlığının kötüleşmesi planı yalnızca **güçlendirebilir.** | D4, D8 |
 | **P4** | **Argüman–kanıt bağlama + yürütme anı tazelik** | Yürütülen her yetki taşıyan argüman, kanıt kaydındaki değer ve `source_version` ile eşleşir; eşleşme yazma işlemiyle aynı transaction içinde yeniden kontrol edilir. | D5 (kısmen), D6, D9 |
 | **P5** | **Onay bütünlüğü ve idempotency** | İnsan onayı `hash(işlem_kimliği, argümanlar, kanıt_kayıtları)` değerine bağlıdır; hash değişirse onay geçersizdir. Aynı işlem kimliği en fazla bir kez yürütülür. | D6, D7 |

@@ -31,6 +31,8 @@ Literatürdeki ilke şudur: risk bilgisini modelden değil güvenilir kaynaktan 
 
 VERIQEN'deki fark şu: D5'te **yürütülen işlem meşrudur**; saldırgan kendi siparişini iade ettirir ve çağrı başına yetki kontrolü geçer. Saldırganın seçtirdiği anahtar yalnızca **risk tahmininde / doğrulama yönlendirmesinde** kullanılır. Yani bu, yetkilendirme katmanında değil, **yönlendirme katmanında oluşan bir confused deputy'dir.** Çağrı başına yetkilendirme bunu yakalamaz. Katkımız bu örüntünün yeni bir yerde ortaya çıktığını göstermek ve TK-özellik tanımıyla kapatmaktır; örüntünün kendisini keşfettiğimizi iddia etmiyoruz. *(Bu konumlandırmanın, yönlendirme düzeyinde confused deputy'yi inceleyen bir çalışma olup olmadığına dair ek taramayla doğrulanması gerekiyor.)*
 
+**Güncelleme (12 §3b):** AgentDojo'da yapılan durum ekme saldırısı, tanıma üçüncü bir koşul eklenmesi gerektiğini gösterdi. (c) **Yazar kökeni:** değeri güvenilir veritabanında dursa bile, o değeri **kimin belirlediği** önemli. Gelen bir transferin gönderen alanını saldırgan belirleyebilir. Güncel tanım: **TK-özellik = güvenilir kaynak + güvenilir anahtar + güvenilir yazar.**
+
 ### İddia 2 — Değişmezlik, kalibrasyonun saldırı altına **taşınmasını** sağlar
 
 Yönlendirme kararı yalnızca TK-özelliklere bağlıysa, saldırgan yönlendirmeyi değiştiremez. O zaman saldırganın yapabileceği en kötü şey, yönlendirmeden bağımsız olarak manipüle edebildiği doğrulayıcıları etkisiz bırakmaktır (örnekte: sahte "hasarlı ürün" beyanıyla kargo kontrolünü boşa düşürmek). Bu en kötü durum **temiz kalibrasyon verisi üzerinde simüle edilebilir.**

@@ -33,6 +33,8 @@ Kod: `experiments/pilot/`. Ayrıntı ve sınırlılıklar: 11.
 | Köken körü uyarlamalı | %66.7 | 0.25 |
 | **VERIQEN** | **%6.8** | **0.38** |
 
+**Kendi tasarımımıza uyarlamalı saldırı (durum ekme):** Saldırgan kullanıcıya küçük bir transfer gönderip IBAN'ını geçmişe soktuğunda VERIQEN v1 %66.7 ile kırıldı. "Değeri kimin yazdı" kontrolü ekleyen VERIQEN-A %6.8'de kaldı; fayda ve maliyet değişmedi.
+
 Kod: `experiments/agentdojo/` (gerçek LLM için `run_live.py`). Ayrıntı: 12.
 
 ## Belgeler

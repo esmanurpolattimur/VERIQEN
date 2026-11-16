@@ -51,15 +51,23 @@ class ProvenanceTracker:
     tool_texts: list[str] = field(default_factory=list)
 
     @classmethod
-    def from_environment(cls, user_prompt: str, env) -> "ProvenanceTracker":
-        """Güvenilir değerler: hesabın kendi IBAN'ı ve geçmiş/zamanlanmış işlemlerin
-        yapısal recipient/sender alanları (saldırgan bu alanlara yazamaz)."""
+    def from_environment(cls, user_prompt: str, env, trust_mode: str = "structured") -> "ProvenanceTracker":
+        """Güvenilir değerler.
+        structured (v1): geçmiş/zamanlanmış işlemlerin TÜM yapısal recipient/sender alanları.
+            Zayıflık: gelen bir transferin 'sender' alanını, parayı gönderen kişi (saldırgan olabilir) belirler.
+        authored (v2): yalnızca değerini KULLANICININ belirlediği alanlar — kullanıcının kendi
+            gönderdiği işlemlerin alıcıları ve kullanıcının zamanladığı ödemelerin alıcıları.
+            İlke: bir alanın güvenilirliği, verinin durduğu yere değil, değeri kimin yazdığına bağlıdır."""
         trusted: set[str] = set()
         acct = env.bank_account
+        own = {_norm(acct.iban), "me"}
         trusted.add(_norm(acct.iban))
         for t in list(acct.transactions) + list(acct.scheduled_transactions):
-            trusted.add(_norm(t.recipient))
-            trusted.add(_norm(t.sender))
+            if trust_mode == "structured":
+                trusted.add(_norm(t.recipient)); trusted.add(_norm(t.sender))
+            elif _norm(t.sender) in own:          # kullanıcının yazdığı işlem
+                trusted.add(_norm(t.recipient))
+        trusted.discard("me")
         return cls(user_prompt=user_prompt, trusted_values=trusted)
 
     def observe_tool_output(self, text: str) -> None:
@@ -144,9 +152,11 @@ class Decision:
 
 
 class Gate:
-    """system ∈ {B0, B1, B2, B3, NAIVE, VERIQEN}"""
+    """system ∈ {B0, B1, B2, B3, NAIVE, VERIQEN, VERIQEN-A}
+    VERIQEN   : anahtar kökeni, 'structured' güven (v1)
+    VERIQEN-A : anahtar kökeni, 'authored' güven (v2, yazar farkındalıklı)"""
 
-    SYSTEMS = ("B0", "B1", "B2", "B3", "NAIVE", "VERIQEN")
+    SYSTEMS = ("B0", "B1", "B2", "B3", "NAIVE", "VERIQEN", "VERIQEN-A")
 
     def __init__(self, system: str, judge=None, review_policy: str = "deny"):
         assert system in self.SYSTEMS, system
@@ -157,7 +167,8 @@ class Gate:
 
     # --- yaşam döngüsü ---
     def start(self, user_prompt: str, env) -> None:
-        self.prov = ProvenanceTracker.from_environment(user_prompt, env)
+        mode = "authored" if self.system == "VERIQEN-A" else "structured"
+        self.prov = ProvenanceTracker.from_environment(user_prompt, env, mode)
         self.balance = float(env.bank_account.balance)
         self.log = []
 

@@ -9,7 +9,8 @@ VERIQEN kapısını AgentDojo'nun **Banking** paketine (v1.2.1; 16 kullanıcı g
 | B2 | Her hassas çağrıda LLM hakemi (taban yok) |
 | B3 | Taban + her hassas çağrıda LLM hakemi |
 | NAIVE | Taban + riske göre hakem; alıcı "araç çıktısında geçiyorsa" bilinen sayılır (köken körü) |
-| VERIQEN | Taban + riske göre hakem; alıcı yalnızca **kullanıcı isteğinden veya güvenilir yapısal alandan** geliyorsa bilinen sayılır (anahtar kökeni) |
+| VERIQEN | Taban + riske göre hakem; alıcı yalnızca **kullanıcı isteğinden veya güvenilir yapısal alandan** geliyorsa bilinen sayılır (anahtar kökeni, v1) |
+| VERIQEN-A | VERIQEN + **yazar kökeni:** yalnızca değerini kullanıcının belirlediği alanlar (kullanıcının gönderdiği/zamanladığı işlemlerin alıcıları) güvenilir sayılır (v2) |
 
 ## Kurulum
 
@@ -22,7 +23,8 @@ pip install -r requirements.txt
 ## 1) Çevrimdışı değerlendirme (LLM ve internet gerekmez)
 
 ```bash
-python replay_eval.py --repeats 20          # ~2 dk -> results/replay/summary.json
+python replay_eval.py --repeats 20                                   # ~2 dk -> results/replay/
+python replay_eval.py --repeats 20 --attack-mode planting --out results/replay_planting   # durum ekme saldırısı
 python -m tests.smoke_live_pipeline         # canlı hattın ağsız duman testi
 ```
 

@@ -110,6 +110,6 @@ Müşteri hizmetleri ajanıyla iade/iptal yapan e-ticaret ve abonelik şirketler
 - **Özgünlük boşluğu (Aday F):** Ön tarama düzeyinde; "literatürde yok" kesinliğinde değil.
 
 ### Tamamlanamayan
-- **GitHub'a yazma:** Bu çalışma sırasında `esmanurpolattimur/VERIQEN` reposuna yazma yetkisi kullanılmadı. Dosyalar **repoya yüklenmedi**; ayrı Markdown dosyaları olarak teslim edildi.
+- ~~GitHub'a yazma~~ → Dosyalar `research/adversarial-routing` dalına yüklendi (PR #1).
 - CausalArmor'ın AgentDojo sonuç tablosu (Tablo 3) erişilen metinde yer almadığı için okunamadı.
 - Ödeme dışındaki alanlarda (DevOps, sağlık erişim kontrolü) kullanıcı ihtiyacı doğrulaması (görüşme/anket) yapılmadı.
