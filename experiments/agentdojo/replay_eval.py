@@ -169,8 +169,8 @@ def main():
                 p_detect=args.p_detect, p_false_alarm=args.p_false_alarm, repeats=args.repeats,
                 review_policy=args.review_policy, attack_mode=args.attack_mode,
                 n_user_tasks=len(utasks), n_injection_tasks=len(itasks))
-    json.dump(dict(meta=meta, summary=summary), open(out / "summary.json", "w"), indent=2, ensure_ascii=False)
-    json.dump(per_case, open(out / "per_case_repeat0.json", "w"), indent=1, ensure_ascii=False)
+    json.dump(dict(meta=meta, summary=summary), open(out / "summary.json", "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+    json.dump(per_case, open(out / "per_case_repeat0.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 
     print(f"{'Sistem':12s} {'ASR %':>14s} {'Zararsız fayda %':>18s} {'Saldırı altı fayda %':>21s} {'Hakem/görev (zararsız)':>23s} {'Hakem/görev (saldırı)':>22s}")
     for s in Gate.SYSTEMS:

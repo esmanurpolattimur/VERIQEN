@@ -309,7 +309,7 @@ def main():
         diffs = np.concatenate([all_runs[s][nm]["_ap"] - all_runs[s]["B3 sabit tam doğrulama"]["_ap"] for s in CFG["seeds"]])
         summary["_paired_" + nm + "_minus_B3"] = dict(
             mean=float(diffs.mean()), ci=boot_ci(diffs, np.random.default_rng(1), CFG["n_boot"]))
-    json.dump(dict(config=CFG, summary=summary), open("results/summary.json", "w"), indent=2, ensure_ascii=False)
+    json.dump(dict(config=CFG, summary=summary), open("results/summary.json", "w", encoding="utf-8"), indent=2, ensure_ascii=False)
     return summary
 
 

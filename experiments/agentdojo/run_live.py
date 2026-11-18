@@ -114,7 +114,7 @@ def main():
         print(f"[{system}] ASR={sum(res['attack_success'].values())/n:.3f} "
               f"fayda(saldırı)={sum(res['attacked_utility'].values())/n:.3f} hakem_çağrısı={res['judge_calls']}")
         fn = logdir / f"summary_{system}_{args.model.replace('/', '_')}_{started.replace(':', '')}.json"
-        json.dump(res, open(fn, "w"), indent=2, ensure_ascii=False, default=str)
+        json.dump(res, open(fn, "w", encoding="utf-8"), indent=2, ensure_ascii=False, default=str)
         print("kaydedildi:", fn)
 
 

@@ -47,8 +47,8 @@ def run(seed):
 
 if __name__ == "__main__":
     rows = [r for s in P.CFG["seeds"] for r in run(s)]
-    json.dump(rows, open("results/sweep.json", "w"), indent=2, ensure_ascii=False)
-    summ = json.load(open("results/summary.json"))["summary"]
+    json.dump(rows, open("results/sweep.json", "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+    summ = json.load(open("results/summary.json", encoding="utf-8"))["summary"]
 
     def agg(system, d):
         rs = [r for r in rows if r["system"] == system and r["delta"] == d]
@@ -63,7 +63,7 @@ if __name__ == "__main__":
             table.append(dict(delta=d, system=nm, cost=c, cost_sd=cs, uaer=u, uaer_sd=us,
                               predicted_excess=pred, realized_excess=real))
             print(f"{d:<6} {nm:10s} {c:6.2f}±{cs:.2f}  {u:.3f}±{us:.3f}   {pred:+.4f}           {real:+.4f}")
-    json.dump(table, open("results/sweep_table.json", "w"), indent=2, ensure_ascii=False)
+    json.dump(table, open("results/sweep_table.json", "w", encoding="utf-8"), indent=2, ensure_ascii=False)
 
     # Grafik
     fig, ax = plt.subplots(figsize=(7.2, 4.6))
