@@ -32,6 +32,7 @@ from agentdojo.agent_pipeline.basic_elements import InitQuery, SystemMessage
 from agentdojo.agent_pipeline.llms.openai_llm import OpenAILLM
 from agentdojo.agent_pipeline.tool_execution import ToolsExecutionLoop
 from agentdojo.benchmark import benchmark_suite_with_injections, benchmark_suite_without_injections
+from agentdojo.logging import OutputLogger
 from agentdojo.task_suite.load_suites import get_suite
 
 from replay_eval import BENCHMARK_VERSION, StaticImportantInstructions
@@ -53,8 +54,8 @@ def make_client(provider: str) -> openai.OpenAI:
     return openai.OpenAI(base_url=base, api_key=key, max_retries=8, timeout=120)  # 429'da otomatik bekleme
 
 
-def build_pipeline(client, model, system, judge_client, judge_model, intent="keyword"):
-    judge = LLMJudge(judge_client, judge_model) if system not in ("B0", "B1") else None
+def build_pipeline(client, model, system, judge_client, judge_model, intent="keyword", judge_log=None):
+    judge = LLMJudge(judge_client, judge_model, log_path=judge_log) if system not in ("B0", "B1") else None
     intent_fn = (lambda p: extract_intent_llm(judge_client, judge_model, p)) if intent == "llm" else None
     gate = Gate(system, judge, intent_fn=intent_fn)
     llm = OpenAILLM(client, model, temperature=0.0)
@@ -93,13 +94,16 @@ def main():
     logdir = Path(args.logdir); logdir.mkdir(parents=True, exist_ok=True)
 
     for system in systems:
-        pipe, gate, judge = build_pipeline(client, args.model, system, jclient, jmodel, args.intent)
+        judge_log = logdir / f"judge_{system}_{args.model.replace('/', '_')}.jsonl"
+        pipe, gate, judge = build_pipeline(client, args.model, system, jclient, jmodel, args.intent, judge_log)
         started = dt.datetime.now().isoformat(timespec="seconds")
         benign = None
-        if not args.no_benign:
-            benign = benchmark_suite_without_injections(pipe, suite, logdir, False, utasks, BENCHMARK_VERSION)
-        attacked = benchmark_suite_with_injections(pipe, suite, StaticImportantInstructions(suite), logdir, False,
-                                                   utasks, args.injection_tasks, True, BENCHMARK_VERSION)
+        # AgentDojo'nun TraceLogger'ı dışarıda bir OutputLogger bağlamı bekler; yoksa NullLogger ile çöker.
+        with OutputLogger(str(logdir), live=None):
+            if not args.no_benign:
+                benign = benchmark_suite_without_injections(pipe, suite, logdir, False, utasks, BENCHMARK_VERSION)
+            attacked = benchmark_suite_with_injections(pipe, suite, StaticImportantInstructions(suite), logdir, False,
+                                                       utasks, args.injection_tasks, True, BENCHMARK_VERSION)
         res = dict(
             system=system, intent=args.intent, provider=args.provider, model=args.model, judge_model=jmodel if judge else None,
             started=started, finished=dt.datetime.now().isoformat(timespec="seconds"),
@@ -107,7 +111,8 @@ def main():
             benign_utility={str(k): v for k, v in (benign["utility_results"].items() if benign else [])},
             attacked_utility={str(k): v for k, v in attacked["utility_results"].items()},
             attack_success={str(k): v for k, v in attacked["security_results"].items()},
-            judge_calls=judge.calls if judge else 0,
+            judge_calls=judge.calls if judge else 0,  # yalnızca bu çalıştırmada yapılan çağrılar
+            judge_log=str(judge_log) if judge else None,  # devam ettirilen koşularda toplam için bu dosyayı sayın
             gate_log_tail=gate.log[-200:],
         )
         n = len(res["attack_success"]) or 1
