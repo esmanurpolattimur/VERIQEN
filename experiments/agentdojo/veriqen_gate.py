@@ -23,6 +23,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from capability import TokenStore, mint_tokens
+
 IBAN_RE = re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b")
 
 USER, TRUSTED_STATE, TOOL_TEXT, UNSEEN = "USER", "TRUSTED_STATE", "TOOL_TEXT", "UNSEEN"
@@ -230,17 +232,26 @@ class Gate:
     VERIQEN-S : sıkı mod — hakem yalnızca değer kullanıcının isteğinde açıkça geçiyorsa atlanır
     VERIQEN-AI: VERIQEN-A + işlem–niyet bağlama (anahtar kelime)
     VERIQEN-SI: VERIQEN-S + işlem–niyet bağlama (anahtar kelime)  ← önerilen
-    VERIQEN-SI*: VERIQEN-S + kâhin niyet (görevin gerçekten gerektirdiği işlemler; üst sınır, yalnız çevrimdışı)"""
+    VERIQEN-SI*: VERIQEN-S + kâhin niyet (görevin gerçekten gerektirdiği işlemler; üst sınır, yalnız çevrimdışı)
+    VERIQEN-T : VERIQEN-SI + niyete bağlı yetenek belirteçleri (capability.py). Para işlemleri yalnız
+                tam uyan, tek kullanımlık bir belirteçle hakemsiz geçer; diğer her şey hakeme gider.
+                Belirteç yalnız kullanıcı isteğinde yazılı IBAN'lardan üretilir.
+    VERIQEN-TN: VERIQEN-T + adıyla anılan alıcıların kullanıcının kendi geçmişinden çözülmesi
+                (val'de fazla izin verdiği görüldü; olumsuz sonuç olarak tutuluyor)."""
 
     SYSTEMS = ("B0", "B1", "B2", "B3", "NAIVE", "VERIQEN", "VERIQEN-A", "VERIQEN-S",
-               "VERIQEN-AI", "VERIQEN-SI", "VERIQEN-SI*")
+               "VERIQEN-AI", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN")
 
     def __init__(self, system: str, judge=None, review_policy: str = "deny", intent_fn=None):
         assert system in self.SYSTEMS, system
         self.system, self.judge, self.review_policy = system, judge, review_policy
-        self.strict = system in ("VERIQEN-S", "VERIQEN-SI", "VERIQEN-SI*")
-        self.authored = system in ("VERIQEN-A", "VERIQEN-S", "VERIQEN-AI", "VERIQEN-SI", "VERIQEN-SI*")
-        self.intent_mode = {"VERIQEN-AI": "keyword", "VERIQEN-SI": "keyword", "VERIQEN-SI*": "oracle"}.get(system)
+        self.strict = system in ("VERIQEN-S", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN")
+        self.authored = system in ("VERIQEN-A", "VERIQEN-S", "VERIQEN-AI", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN")
+        self.intent_mode = {"VERIQEN-AI": "keyword", "VERIQEN-SI": "keyword", "VERIQEN-SI*": "oracle",
+                            "VERIQEN-T": "keyword", "VERIQEN-TN": "keyword"}.get(system)
+        self.caps: TokenStore | None = TokenStore() if system in ("VERIQEN-T", "VERIQEN-TN") else None
+        self.named_payees = system == "VERIQEN-TN"
+        self.scheduled: dict[str, str] = {}
         self.intent_fn = intent_fn            # canlı modda LLM niyet çıkarıcı verilebilir
         self.allowed: set[str] | None = None
         self.auto_counts: dict = {}
@@ -265,6 +276,12 @@ class Gate:
             self.allowed = set(oracle_actions or ())
         else:
             self.allowed = None
+        # Zamanlanmış işlem kimliği → alıcı (güvenilir durum); güncelleme çağrıları alıcı vermeyebilir.
+        self.scheduled = {str(t.id): _norm(t.recipient) for t in env.bank_account.scheduled_transactions}
+        if self.caps is not None:
+            self.caps.new_episode()
+            mint_tokens(self.caps, user_prompt, env, self.allowed or set(), MONEY_TOOLS, AUTO_AMOUNT_LIMIT,
+                        named=self.named_payees)
 
     def observe_tool_output(self, text: str) -> None:
         self.prov.observe_tool_output(text)
@@ -295,6 +312,16 @@ class Gate:
         """Yönlendirme: hangi çağrılar pahalı doğrulamaya gider?"""
         if self.allowed is not None and function in SENSITIVE_TOOLS and function not in self.allowed:
             return True, "route:action_not_in_intent"
+        if self.caps is not None and function in MONEY_TOOLS:
+            rcpt = args.get("recipient")
+            if rcpt is None and function == "update_scheduled_transaction":
+                rcpt = self.scheduled.get(str(args.get("id")))
+            amt = args.get("amount")
+            tok, why = self.caps.match(function, rcpt, float(amt) if amt is not None else None)
+            if tok is not None:
+                self.caps.consume(tok)
+                return False, f"route:{why}"
+            return True, f"route:{why}"
         if function in MONEY_TOOLS:
             rcpt = args.get("recipient")
             amt = float(args.get("amount") or 0.0)

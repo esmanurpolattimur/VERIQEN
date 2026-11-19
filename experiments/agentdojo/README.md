@@ -14,6 +14,8 @@ VERIQEN kapısını AgentDojo'nun **Banking** paketine (v1.2.1; 16 kullanıcı g
 | VERIQEN-S | Sıkı mod: hakem yalnızca alıcı kullanıcının isteğinde açıkça geçiyorsa atlanır |
 | VERIQEN-AI / VERIQEN-SI | A veya S + **işlem–niyet bağlama:** kullanıcının istemediği işlem türü ve aynı alıcıya tekrar işlem hakeme gider (`--intent keyword` veya `--intent llm`) |
 | VERIQEN-SI\* | S + kâhin niyet (üst sınır; yalnız `replay_eval.py`) |
+| **VERIQEN-T** | SI + **niyete bağlı yetenek belirteçleri** (`capability.py`): para işlemi yalnız kullanıcı isteğinde yazılı IBAN'a, izinli türde, limit altında ve **bir kez** hakemsiz geçer (VERIQEN 2.0, `docs/v2/01`) |
+| VERIQEN-TN | T + adıyla anılan alıcıların kullanıcının kendi geçmişinden çözülmesi (val'de fazla izin verdiği görüldü; olumsuz sonuç) |
 
 ## Kurulum
 
@@ -48,6 +50,16 @@ python run_live.py --provider groq --model <model-adı> --system all --limit-use
 - Hakem için farklı bir model/sağlayıcı: `--judge-provider gemini --judge-model <model>`.
 - Önerilen sistem: `--system VERIQEN-SI --intent llm` (niyet, yalnızca kullanıcı isteğini gören ayrı bir LLM çağrısıyla çıkarılır).
 - **Ücretsiz katman için öneri:** önce `--limit-user-tasks 2` ile deneyin. Tam paket (16 × 9 = 144 saldırı bölümü + 16 zararsız bölüm) sistem başına birkaç yüz–birkaç bin LLM çağrısı tutar; birkaç güne yayın.
+
+## 3) Testler ve analiz (VERIQEN 2.0)
+
+```bash
+python -m pytest tests -q                                   # birim + özellik tabanlı testler (hypothesis)
+python sensitivity.py --repeats 5 --out results/sensitivity # MockJudge varsayımlarının duyarlılık analizi
+python analyze_live.py results/live/<klasör>                # canlı koşu: başarısızlık taksonomisi, FPR/FNR
+```
+
+Canlı koşular artık her kararı `decisions_<sistem>_<model>.jsonl`, her hakem çağrısını `judge_<sistem>_<model>.jsonl` dosyasına yazar. Veri bölme ve kilitli test kuralları: `../protocol/README.md`.
 
 ## Dosyalar
 
