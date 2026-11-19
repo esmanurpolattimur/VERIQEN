@@ -92,6 +92,15 @@ def main():
         raise SystemExit("VERIQEN-SI* kâhin niyet kullanır; yalnızca replay_eval.py ile çalışır.")
     utasks = args.user_tasks or list(suite.user_tasks)[: args.limit_user_tasks]
     logdir = Path(args.logdir); logdir.mkdir(parents=True, exist_ok=True)
+    # Kota/ağ hatasıyla yarıda kalan bölümler sonuçsuz (utility=None) kaydedilir ve AgentDojo bunları
+    # devam koşusunda atlar. Böyle dosyaları silip yeniden koşulmalarını sağla.
+    for f in logdir.glob("*/banking/*/*/*.json"):
+        try:
+            if json.load(open(f, encoding="utf-8")).get("utility") is None:
+                print("yarım kalmış bölüm siliniyor (yeniden koşulacak):", f)
+                f.unlink()
+        except (json.JSONDecodeError, OSError):
+            pass
 
     for system in systems:
         judge_log = logdir / f"judge_{system}_{args.model.replace('/', '_')}.jsonl"
