@@ -96,6 +96,7 @@ def main():
     for system in systems:
         judge_log = logdir / f"judge_{system}_{args.model.replace('/', '_')}.jsonl"
         pipe, gate, judge = build_pipeline(client, args.model, system, jclient, jmodel, args.intent, judge_log)
+        gate.decision_log_path = logdir / f"decisions_{system}_{args.model.replace('/', '_')}.jsonl"
         started = dt.datetime.now().isoformat(timespec="seconds")
         benign = None
         # AgentDojo'nun TraceLogger'ı dışarıda bir OutputLogger bağlamı bekler; yoksa NullLogger ile çöker.
@@ -113,7 +114,7 @@ def main():
             attack_success={str(k): v for k, v in attacked["security_results"].items()},
             judge_calls=judge.calls if judge else 0,  # yalnızca bu çalıştırmada yapılan çağrılar
             judge_log=str(judge_log) if judge else None,  # devam ettirilen koşularda toplam için bu dosyayı sayın
-            gate_log_tail=gate.log[-200:],
+            decision_log=str(gate.decision_log_path),  # tüm bölümlerin kararları (gate.log yalnız son bölümü tutar)
         )
         n = len(res["attack_success"]) or 1
         print(f"[{system}] ASR={sum(res['attack_success'].values())/n:.3f} "

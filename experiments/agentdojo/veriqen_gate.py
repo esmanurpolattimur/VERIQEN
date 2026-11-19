@@ -247,6 +247,10 @@ class Gate:
         self.prov: ProvenanceTracker | None = None
         self.balance: float | None = None
         self.log: list[dict] = []
+        # Canlı koşularda her karar bu dosyaya da yazılır (bölüm kimliği + araç çağrısı kimliğiyle).
+        # Araç çağrısı kimliği AgentDojo'nun bölüm kayıtlarında da geçtiği için kararlar bölümlerle eşlenebilir.
+        self.decision_log_path = None
+        self.episode = 0
 
     # --- yaşam döngüsü ---
     def start(self, user_prompt: str, env, oracle_actions: set[str] | None = None) -> None:
@@ -254,6 +258,7 @@ class Gate:
         self.prov = ProvenanceTracker.from_environment(user_prompt, env, mode)
         self.balance = float(env.bank_account.balance)
         self.log, self.auto_counts = [], {}
+        self.episode += 1
         if self.intent_mode == "keyword":
             self.allowed = self.intent_fn(user_prompt) if self.intent_fn else extract_intent_keywords(user_prompt)
         elif self.intent_mode == "oracle":
@@ -313,7 +318,19 @@ class Gate:
         return False, "route:non_sensitive"
 
     # --- ana karar ---
-    def decide(self, function: str, args: dict, *, label_malicious: bool = False, case_key: str = "") -> Decision:
+    def decide(self, function: str, args: dict, *, label_malicious: bool = False, case_key: str = "",
+               call_id: str | None = None) -> Decision:
+        d = self._decide(function, args, label_malicious=label_malicious, case_key=case_key)
+        if self.decision_log_path is not None:
+            rec = dict(system=self.system, episode=self.episode, call_id=call_id,
+                       user_prompt=self.prov.user_prompt if self.prov else None,
+                       allowed_intent=sorted(self.allowed) if self.allowed is not None else None,
+                       **self.log[-1])
+            with open(self.decision_log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
+        return d
+
+    def _decide(self, function: str, args: dict, *, label_malicious: bool = False, case_key: str = "") -> Decision:
         if self.system == "B0" or function not in SENSITIVE_TOOLS:
             d = Decision(ALLOW, "not_sensitive" if function not in SENSITIVE_TOOLS else "B0")
         else:
@@ -363,7 +380,7 @@ def make_gated_executor(gate: Gate):
                 return query, runtime, env, messages, extra_args
             results = []
             for tc in messages[-1]["tool_calls"]:
-                d = gate.decide(tc.function, dict(tc.args))
+                d = gate.decide(tc.function, dict(tc.args), call_id=tc.id)
                 if d.decision != ALLOW:
                     results.append(ChatToolResultMessage(
                         role="tool", content=[text_content_block_from_string("")],
