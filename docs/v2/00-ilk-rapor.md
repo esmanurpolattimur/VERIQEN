@@ -164,6 +164,19 @@ Puanlar öznel (Düşük / Orta / Yüksek), ölçüm değil.
 
 **Kota planı:** Tek model ve tek sağlayıcıyla günde yaklaşık 40 bölüm. Kapsamı iki katına çıkarmak için ikinci bir ücretsiz sağlayıcı (Gemini, kart istemiyor) önerilir. Ancak aynı karşılaştırmadaki tüm sistemler **aynı modelle** koşulmalı.
 
+### Plan güncellemesi — 19 Kasım akşamı (ara jüri değerlendirmesinden sonra)
+
+**Ne değişti ve neden:** Yetenek belirteçleri (VERIQEN-T) replay'de "doğru alıcıya istenmemiş ek işlem" açığını kapattı. Ama yalnız kullanıcı isteğinde **yazılı** IBAN'lara yetki verdiği için, gerçek hakemin en çok yanlış engellediği durumu (fatura gibi alıcının bir **belgeden** geldiği meşru ödemeler) değiştirmiyor. Bu durumlar için ayrı bir tasarım kararı gerekiyor. Ayrıca kilitli saldırı seti, VERIQEN-T dondurulmadan önce yazılmalı; aksi hâlde bağımsızlık iddiası zayıflar.
+
+| Sıra | İş | Not |
+|---|---|---|
+| 1 (19 Kas) | **Kilitli saldırı seti v1:** yaz, içeriği git dışında sakla, sha256'sını commit et; yalnız korumasız sistemde (B0) çalışabilirlik kontrolü yap | Yazar, VERIQEN'in geliştiricisi; tam bağımsız değil, öyle raporlanacak |
+| 2 (19–20 Kas) | `analyze_live.py`: meşru çağrıların yanlış engellenme oranını **alıcının kaynağına göre** ayır (kullanıcı isteği / belge-araç çıktısı / kullanıcının geçmişi) | Canlı koşudan önce hazır olmalı |
+| 3 (20 Kas) | **VERIQEN-TR:** T + kaynağı belge olan alıcılarda hakem yerine REVIEW (kullanıcıya "Faturadaki IBAN UK12…, onaylıyor musunuz?" sorusu) | **Tasarım tercihi, katkı değil.** Ticari ürünlerdeki onay akışına benzer. REVIEW'in hiç tetiklenmemesi eleştirisine de cevap. Değerlendirmede REVIEW ayrı raporlanır, "başarı" sayılmaz |
+| 4 (kota dolunca) | Canlı koşu: B3, VERIQEN-SI, VERIQEN-T, VERIQEN-TR aynı modelde, karar ve hakem kaydıyla | Kota: 120b için günde ~40 bölüm |
+| 5 (dondurma) | VERIQEN-T/TR commit'i protokole yazılır → kilitli set **bir kez** açılır | Sonuç kötü olsa da raporlanır |
+| 6 (24–25 Kas) | Jüri cevabı, sınırlılıklar, savunma belgeleri | |
+
 ### Aşama 2 — 25 Kasım sonrası (2–3 ay)
 Köken grafiği ve Slack/Travel entegrasyonu → ekip dışı red-team (30+ saldırı, 8 kategori) → B4 (VP-Control yeniden uygulaması) → 5 tohumlu tam karşılaştırma ve ablasyon → beklenen fayda ve Pareto analizi → tam metin literatür incelemesi → FastAPI ürün katmanı ve REVIEW akışı (TOCTOU ancak burada ölçülebilir) → kalan belgeler.
 

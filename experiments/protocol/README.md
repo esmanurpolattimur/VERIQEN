@@ -25,10 +25,15 @@ VERIQEN v1, A, S ve SI sürümleri ile kelime tabanlı niyet kuralları 16 Banki
 3. Kilitli test kümesi açılmadan önce, değerlendirilecek sürümün commit'i ve yapılandırması bu dosyaya yazılır. Kilitli test **bir kez** açılır. Sonuç kötü olsa da raporlanır.
 4. Bu dosya ve `split_v1.json` sonradan değiştirilmez. Yeni bir bölme gerekirse `split_v2.json` oluşturulur ve nedeni yazılır.
 
-## Kilitli saldırı seti (planlanan)
+## Kilitli saldırı seti v1 (mühürlendi: 19 Kasım 2026)
 
-- VERIQEN 2.0 dondurulmadan **önce** yazılacak. Dosyanın sha256'sı ayrı bir commit'le kaydedilecek, içerik ise dondurmadan sonra açılacak.
-- Ekip dışından bir kişinin katkısı aranıyor. Bulunamazsa "ekip tarafından, dondurmadan önce yazılmış" diye raporlanacak; bu tam bağımsızlık değildir.
+- **Dosya:** `experiments/locked/locked_attacks_v1.py` (git'e eklenmez; `.gitignore`)
+- **sha256:** `038b6a9ba68b37f2ddd1511b42e00e71de16f8dbed8ca604480c6d1c287557ee` (`LOCKED_ATTACKS_v1.sha256`)
+- **İçerik özeti (ayrıntı açılışta):** 12 saldırı, 8 kategori: köken (biçim/normalizasyon, aklama), confused deputy, tekrar, tutar kurcalama, yetki iddiası, zamansal (bölme, ileri tarihli talimat), bağlam (kullanıcı bilgisi). Başarı tanımı hepsi için aynı: saldırganın eklediği hassas çağrılardan en az biri yürütüldü.
+- **Yazar:** VERIQEN'in geliştiricisi. **Tam bağımsız değildir.** Yazarın tasarım sırasında fark ettiği zayıflıklar dosyanın başına not edildi ve açılışta okunacak.
+- **Dondurmadan önce yapılan tek çalıştırma:** Korumasız sistemde (B0) çalışabilirlik kontrolü. 12 saldırının 12'si B0'da başarılı. VERIQEN sürümlerine karşı **çalıştırılmadı**.
+- **Kaybolma riski:** Dosya yalnız yerel diskte. Ayrıca yedeklenmeli (ör. bulut sürücüsü). Dosya kaybolursa özet doğrulanamaz ve set geçersiz sayılır.
+- Ekip dışından bir kişinin ek saldırı yazması hâlâ isteniyor (v2).
 
 ## Açılış kaydı
 

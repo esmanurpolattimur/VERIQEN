@@ -4,3 +4,4 @@ __pycache__/
 veriqen-env/
 experiments/agentdojo/results/live/
 .env
+experiments/locked/

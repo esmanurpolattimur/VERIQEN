@@ -26,7 +26,7 @@ from replay_eval import BENCHMARK_VERSION, StaticImportantInstructions, ci95, ru
 from veriqen_gate import MockJudge
 from agentdojo.task_suite.load_suites import get_suite
 
-SYSTEMS = ("B1", "B3", "VERIQEN-S", "VERIQEN-SI", "VERIQEN-SI*")
+SYSTEMS = ("B1", "B3", "VERIQEN-S", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T")
 MODES = ("standard", "planting", "payee")
 MISS_GRID = (0.0, 0.05, 0.10, 0.20, 0.30, 0.50)
 FA_GRID = (0.0, 0.05, 0.10, 0.20, 0.30)
@@ -65,6 +65,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repeats", type=int, default=5)
     ap.add_argument("--out", default="results/sensitivity")
+    ap.add_argument("--systems", nargs="*", default=list(SYSTEMS))
     args = ap.parse_args()
 
     suite = get_suite(BENCHMARK_VERSION, "banking")
@@ -76,7 +77,7 @@ def main():
     rows = []
     points = [("miss", pm, DEFAULT_FA) for pm in MISS_GRID] + [("fa", DEFAULT_MISS, pf) for pf in FA_GRID]
     for sweep, pm, pf in points:
-        for system in SYSTEMS:
+        for system in args.systems:
             res = evaluate(suite, attack, utasks, itasks, system, pm, pf, args.repeats)
             rows.append(dict(sweep=sweep, p_miss=pm, p_fa=pf, system=system, result=res))
             print(f"[{sweep}] p_miss={pm:.2f} p_fa={pf:.2f} {system:12s} "
@@ -87,7 +88,7 @@ def main():
     meta = dict(benchmark_version=BENCHMARK_VERSION, suite="banking", judge="MockJudge (SİMÜLASYON)",
                 agent="scripted fully-compromised agent", repeats=args.repeats,
                 miss_grid=MISS_GRID, fa_grid=FA_GRID, default_miss=DEFAULT_MISS, default_fa=DEFAULT_FA,
-                systems=SYSTEMS, attack_modes=MODES)
+                systems=args.systems, attack_modes=MODES)
     json.dump(dict(meta=meta, rows=rows), open(out / "sensitivity.json", "w", encoding="utf-8"),
               indent=1, ensure_ascii=False)
     print("kaydedildi:", out / "sensitivity.json")
