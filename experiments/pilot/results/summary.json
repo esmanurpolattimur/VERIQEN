@@ -1,0 +1,400 @@
+{
+  "config": {
+    "n_customers": 5000,
+    "fraud_share": 0.06,
+    "n_train": 6000,
+    "n_cal": 6000,
+    "n_test": 10000,
+    "n_attack": 3000,
+    "review_threshold": 300.0,
+    "hard_limit": 1000.0,
+    "cost_carrier": 1.0,
+    "cost_fraud": 4.0,
+    "p_carrier_detect": 0.95,
+    "p_fraud_detect": 0.92,
+    "fp_carrier": 0.005,
+    "fp_fraud": 0.01,
+    "p_human_catch": 0.85,
+    "opportunistic_rate": 0.03,
+    "loyal_pool_size": 30,
+    "floor_new_account_months": 6.0,
+    "floor_amount_p1": 150.0,
+    "target_extra_uaer": 0.01,
+    "seeds": [
+      11,
+      22,
+      33,
+      44,
+      55
+    ],
+    "n_boot": 2000
+  },
+  "summary": {
+    "B0 korumasız": {
+      "cost": {
+        "mean": 0.0,
+        "sd": 0.0
+      },
+      "uaer_natural": {
+        "mean": 1.0,
+        "sd": 0.0
+      },
+      "fbr": {
+        "mean": 0.0,
+        "sd": 0.0
+      },
+      "her": {
+        "mean": 0.0,
+        "sd": 0.0
+      },
+      "uaer_attack": {
+        "mean": 1.0,
+        "sd": 0.0
+      },
+      "downgrade_asr": {
+        "mean": 1.0,
+        "sd": 0.0
+      },
+      "attack_full_plan_share": {
+        "mean": 0.0,
+        "sd": 0.0
+      },
+      "uaer_attack_pooled_ci": [
+        1.0,
+        1.0
+      ],
+      "attacker_choice": {
+        "yok": 15000
+      }
+    },
+    "B1 yalnız kurallar": {
+      "cost": {
+        "mean": 0.0,
+        "sd": 0.0
+      },
+      "uaer_natural": {
+        "mean": 0.9510901958777431,
+        "sd": 0.0024435892869675443
+      },
+      "fbr": {
+        "mean": 0.0002855469317993675,
+        "sd": 0.00012482538997413844
+      },
+      "her": {
+        "mean": 0.03286,
+        "sd": 0.00100647901120689
+      },
+      "uaer_attack": {
+        "mean": 1.0,
+        "sd": 0.0
+      },
+      "downgrade_asr": {
+        "mean": 1.0,
+        "sd": 0.0
+      },
+      "attack_full_plan_share": {
+        "mean": 0.0,
+        "sd": 0.0
+      },
+      "uaer_attack_pooled_ci": [
+        1.0,
+        1.0
+      ],
+      "attacker_choice": {
+        "yok": 15000
+      }
+    },
+    "B3 sabit tam doğrulama": {
+      "cost": {
+        "mean": 5.0,
+        "sd": 0.0
+      },
+      "uaer_natural": {
+        "mean": 0.02795783398014155,
+        "sd": 0.001619243598974315
+      },
+      "fbr": {
+        "mean": 0.015231278005168986,
+        "sd": 0.00012295925039402584
+      },
+      "her": {
+        "mean": 0.03286,
+        "sd": 0.00100647901120689
+      },
+      "uaer_attack": {
+        "mean": 0.07999999999999996,
+        "sd": 0.0
+      },
+      "downgrade_asr": {
+        "mean": 0.0,
+        "sd": 0.0
+      },
+      "attack_full_plan_share": {
+        "mean": 1.0,
+        "sd": 0.0
+      },
+      "uaer_attack_pooled_ci": [
+        0.07999999999999999,
+        0.07999999999999999
+      ],
+      "attacker_choice": {
+        "D1": 12057,
+        "yok": 2943
+      }
+    },
+    "B4-naif": {
+      "cost": {
+        "mean": 1.84602,
+        "sd": 0.1965473403534121
+      },
+      "uaer_natural": {
+        "mean": 0.036661512940448324,
+        "sd": 0.005612037400223073
+      },
+      "fbr": {
+        "mean": 0.005801733668749009,
+        "sd": 0.0004377225964107359
+      },
+      "her": {
+        "mean": 0.03286,
+        "sd": 0.00100647901120689
+      },
+      "uaer_attack": {
+        "mean": 0.9986506666666666,
+        "sd": 0.0012569592939577583
+      },
+      "downgrade_asr": {
+        "mean": 0.9985333333333333,
+        "sd": 0.0013662601021279639
+      },
+      "attack_full_plan_share": {
+        "mean": 0.001466666666666667,
+        "sd": 0.0013662601021279463
+      },
+      "uaer_attack_pooled_ci": [
+        0.9980373333333333,
+        0.9992026666666666
+      ],
+      "attacker_choice": {
+        "D1+D2+D5": 11422,
+        "D1+D5": 90,
+        "D2+D5": 3437,
+        "D5": 18,
+        "D1": 20,
+        "yok": 7,
+        "D1+D2": 6
+      }
+    },
+    "B4-T (güvenilir kaynak)": {
+      "cost": {
+        "mean": 1.5962999999999998,
+        "sd": 0.08049211141472186
+      },
+      "uaer_natural": {
+        "mean": 0.03425596518763256,
+        "sd": 0.002896657481370308
+      },
+      "fbr": {
+        "mean": 0.006245215605997898,
+        "sd": 0.00020875304660589403
+      },
+      "her": {
+        "mean": 0.03286,
+        "sd": 0.00100647901120689
+      },
+      "uaer_attack": {
+        "mean": 1.0,
+        "sd": 0.0
+      },
+      "downgrade_asr": {
+        "mean": 1.0,
+        "sd": 0.0
+      },
+      "attack_full_plan_share": {
+        "mean": 0.0,
+        "sd": 0.0
+      },
+      "uaer_attack_pooled_ci": [
+        1.0,
+        1.0
+      ],
+      "attacker_choice": {
+        "D1+D5": 11550,
+        "D1": 507,
+        "D5": 2805,
+        "yok": 138
+      }
+    },
+    "B4-TK (güvenilir kaynak+anahtar)": {
+      "cost": {
+        "mean": 1.5962999999999998,
+        "sd": 0.08049211141472186
+      },
+      "uaer_natural": {
+        "mean": 0.03425596518763256,
+        "sd": 0.002896657481370308
+      },
+      "fbr": {
+        "mean": 0.006245215605997898,
+        "sd": 0.00020875304660589403
+      },
+      "her": {
+        "mean": 0.03286,
+        "sd": 0.00100647901120689
+      },
+      "uaer_attack": {
+        "mean": 0.11955999999999997,
+        "sd": 0.012306850847303616
+      },
+      "downgrade_asr": {
+        "mean": 0.043000000000000003,
+        "sd": 0.013377011790547412
+      },
+      "attack_full_plan_share": {
+        "mean": 0.9570000000000001,
+        "sd": 0.013377011790547406
+      },
+      "uaer_attack_pooled_ci": [
+        0.11661446666666665,
+        0.1224442
+      ],
+      "attacker_choice": {
+        "D1": 12057,
+        "yok": 2943
+      }
+    },
+    "VERIQEN (TK + monoton taban)": {
+      "cost": {
+        "mean": 1.60486,
+        "sd": 0.08737109361796959
+      },
+      "uaer_natural": {
+        "mean": 0.03448922765027129,
+        "sd": 0.003221541691288848
+      },
+      "fbr": {
+        "mean": 0.0062692690044021905,
+        "sd": 0.00022729547638684178
+      },
+      "her": {
+        "mean": 0.03286,
+        "sd": 0.00100647901120689
+      },
+      "uaer_attack": {
+        "mean": 0.12219733333333334,
+        "sd": 0.01734578885813819
+      },
+      "downgrade_asr": {
+        "mean": 0.04586666666666667,
+        "sd": 0.018854118324063255
+      },
+      "attack_full_plan_share": {
+        "mean": 0.9541333333333334,
+        "sd": 0.018854118324063262
+      },
+      "uaer_attack_pooled_ci": [
+        0.119192,
+        0.12532533333333334
+      ],
+      "attacker_choice": {
+        "D1": 12057,
+        "yok": 2943
+      }
+    },
+    "VERIQEN-K (TK + taban + kötü durum kalibrasyonu)": {
+      "cost": {
+        "mean": 1.97582,
+        "sd": 0.14520209020534114
+      },
+      "uaer_natural": {
+        "mean": 0.03728733584391448,
+        "sd": 0.006509449043471855
+      },
+      "fbr": {
+        "mean": 0.0071711745887658804,
+        "sd": 0.0005179860346872345
+      },
+      "her": {
+        "mean": 0.03286,
+        "sd": 0.00100647901120689
+      },
+      "uaer_attack": {
+        "mean": 0.09048799999999997,
+        "sd": 0.0010928698204472698
+      },
+      "downgrade_asr": {
+        "mean": 0.0114,
+        "sd": 0.0011879019787470312
+      },
+      "attack_full_plan_share": {
+        "mean": 0.9885999999999999,
+        "sd": 0.0011879019787470215
+      },
+      "uaer_attack_pooled_ci": [
+        0.08901446666666665,
+        0.09208419999999998
+      ],
+      "attacker_choice": {
+        "D1": 12057,
+        "yok": 2943
+      }
+    },
+    "B4-naif + kötü durum kalibrasyonu": {
+      "cost": {
+        "mean": 1.8873000000000002,
+        "sd": 0.21192929245387476
+      },
+      "uaer_natural": {
+        "mean": 0.036453173250644094,
+        "sd": 0.005194704997169551
+      },
+      "fbr": {
+        "mean": 0.005879990037427256,
+        "sd": 0.00044573106289538995
+      },
+      "her": {
+        "mean": 0.03286,
+        "sd": 0.00100647901120689
+      },
+      "uaer_attack": {
+        "mean": 0.9984053333333331,
+        "sd": 0.0012718350696708217
+      },
+      "downgrade_asr": {
+        "mean": 0.9982666666666666,
+        "sd": 0.001382429423555191
+      },
+      "attack_full_plan_share": {
+        "mean": 0.0017333333333333333,
+        "sd": 0.0013824294235551813
+      },
+      "uaer_attack_pooled_ci": [
+        0.9977306666666667,
+        0.9989573333333333
+      ],
+      "attacker_choice": {
+        "D1+D2+D5": 11410,
+        "D1+D5": 90,
+        "D2+D5": 3445,
+        "D5": 18,
+        "D1": 24,
+        "yok": 7,
+        "D1+D2": 6
+      }
+    },
+    "_paired_VERIQEN (TK + monoton taban)_minus_B3": {
+      "mean": 0.04219733333333334,
+      "ci": [
+        0.039192000000000005,
+        0.045081533333333326
+      ]
+    },
+    "_paired_VERIQEN-K (TK + taban + kötü durum kalibrasyonu)_minus_B3": {
+      "mean": 0.010487999999999999,
+      "ci": [
+        0.008954666666666668,
+        0.012082666666666667
+      ]
+    }
+  }
+}
