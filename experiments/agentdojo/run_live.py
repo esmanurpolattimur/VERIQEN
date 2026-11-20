@@ -54,8 +54,10 @@ def make_client(provider: str) -> openai.OpenAI:
     return openai.OpenAI(base_url=base, api_key=key, max_retries=8, timeout=120)  # 429'da otomatik bekleme
 
 
-def build_pipeline(client, model, system, judge_client, judge_model, intent="keyword", judge_log=None):
-    judge = LLMJudge(judge_client, judge_model, log_path=judge_log) if system not in ("B0", "B1") else None
+def build_pipeline(client, model, system, judge_client, judge_model, intent="keyword", judge_log=None,
+                   judge_prompt="v0"):
+    judge = (LLMJudge(judge_client, judge_model, log_path=judge_log, prompt_version=judge_prompt)
+             if system not in ("B0", "B1") else None)
     intent_fn = (lambda p: extract_intent_llm(judge_client, judge_model, p)) if intent == "llm" else None
     gate = Gate(system, judge, intent_fn=intent_fn)
     llm = OpenAILLM(client, model, temperature=0.0)
@@ -78,6 +80,8 @@ def main():
     ap.add_argument("--injection-tasks", nargs="*", default=None)
     ap.add_argument("--limit-user-tasks", type=int, default=None)
     ap.add_argument("--no-benign", action="store_true", help="saldırısız koşuyu atla")
+    ap.add_argument("--judge-prompt", choices=["v0", "v1", "v2", "v3", "v4"], default="v0",
+                    help="hakem talimatı; v4 köken bilgisini kullanır (docs/v2/05). Dondurulmuş sonuçlar v0 ile.")
     ap.add_argument("--intent", choices=["keyword", "llm"], default="keyword",
                     help="VERIQEN-AI/SI için niyet çıkarıcı: keyword (LLM'siz) veya llm (yalnız kullanıcı isteğini okur)")
     ap.add_argument("--logdir", default="results/live")
@@ -103,8 +107,9 @@ def main():
             pass
 
     for system in systems:
-        judge_log = logdir / f"judge_{system}_{args.model.replace('/', '_')}.jsonl"
-        pipe, gate, judge = build_pipeline(client, args.model, system, jclient, jmodel, args.intent, judge_log)
+        judge_log = logdir / f"judge_{system}{'' if args.judge_prompt == 'v0' else '_' + args.judge_prompt}_{args.model.replace('/', '_')}.jsonl"
+        pipe, gate, judge = build_pipeline(client, args.model, system, jclient, jmodel, args.intent, judge_log,
+                                           args.judge_prompt)
         gate.decision_log_path = logdir / f"decisions_{system}_{args.model.replace('/', '_')}.jsonl"
         started = dt.datetime.now().isoformat(timespec="seconds")
         benign = None

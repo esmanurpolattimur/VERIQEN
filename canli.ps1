@@ -10,7 +10,8 @@ param(
     [string]$Model = "openai/gpt-oss-20b",
     [string]$LogDir = "results/live/run3-20b",
     [string[]]$UserTasks = @("user_task_0", "user_task_3", "user_task_5", "user_task_6"),
-    [string[]]$InjectionTasks = @("injection_task_0", "injection_task_4")
+    [string[]]$InjectionTasks = @("injection_task_0", "injection_task_4"),
+    [ValidateSet("v0", "v1", "v2", "v3", "v4")][string]$JudgePrompt = "v0"
 )
 
 $python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
@@ -29,7 +30,7 @@ Push-Location $workdir
 try {
     Write-Host "Kosu: $System | model $Model | klasor $LogDir" -ForegroundColor Cyan
     & $python run_live.py --provider groq --model $Model --system $System `
-        --user-tasks $UserTasks --injection-tasks $InjectionTasks --logdir $LogDir
+        --user-tasks $UserTasks --injection-tasks $InjectionTasks --logdir $LogDir --judge-prompt $JudgePrompt
 } finally {
     Pop-Location
 }

@@ -5,7 +5,7 @@
 #   & (Resolve-Path D:\verq*\hakem.ps1) v2 -Model openai/gpt-oss-120b -Split val
 # Kaldigi yerden devam eder. Anahtari dosyaya yazmaz.
 param(
-    [Parameter(Mandatory = $true, Position = 0)][ValidateSet("v0", "v1", "v2", "v3")][string]$Version,
+    [Parameter(Mandatory = $true, Position = 0)][ValidateSet("v0", "v1", "v2", "v3", "v4")][string]$Version,
     [string]$Model = "openai/gpt-oss-20b",
     [ValidateSet("dev", "val", "all")][string]$Split = "dev",
     [string[]]$Ids = @(),
