@@ -118,6 +118,13 @@ def run(provider, model, version, split, limit, out_name, ids=None):
                                                                      authored_rcpts, authored)
         tokens_before = judge.usage_tokens
         allow = judge.judge(c["prompt"], c["function"], c["args"], facts)
+        if getattr(judge, "last_error", None):
+            # Hata (kota, ağ) bir hakem kararı DEĞİLDİR: kaydetme. Kotada dur; vaka devam koşusunda yeniden denenir.
+            if "429" in judge.last_error or "rate limit" in judge.last_error.lower():
+                print("Kota doldu; durduruluyor. Aynı komut daha sonra kaldığı yerden devam eder.")
+                break
+            print(c["id"], "hata, kaydedilmedi:", judge.last_error[:120])
+            continue
         rec = dict(id=c["id"], split=c["split"], label=c["label"], verdict="allow" if allow else "block",
                    tokens=judge.usage_tokens - tokens_before, version=version, model=model)
         with open(path, "a", encoding="utf-8") as f:

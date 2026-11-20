@@ -369,8 +369,10 @@ class LLMJudge:
             self.usage_tokens += getattr(getattr(resp, "usage", None), "total_tokens", 0) or 0
         except Exception as e:  # ağ/kota hatasında güvenli varsayılan: engelle (ilke 6)
             print(f"[judge] hata, güvenli varsayılan BLOCK: {e}")
+            self.last_error = str(e)
             self._log(user_prompt=user_prompt, function=function, args=args, answer=None, allow=False, error=str(e)[:300])
             return False
+        self.last_error = None
         # JSON kararı ya da son verilen ALLOW/BLOCK geçerli; anlaşılmazsa güvenli varsayılan: engelle.
         allow = _parse_verdict(out)
         self._log(user_prompt=user_prompt, function=function, args=args, answer=out[:300], allow=allow, error=None)
