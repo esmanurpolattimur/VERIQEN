@@ -7,7 +7,9 @@
 param(
     [Parameter(Mandatory = $true, Position = 0)][ValidateSet("v0", "v1", "v2")][string]$Version,
     [string]$Model = "openai/gpt-oss-20b",
-    [ValidateSet("dev", "val", "all")][string]$Split = "dev"
+    [ValidateSet("dev", "val", "all")][string]$Split = "dev",
+    [string]$Ids = "",
+    [string]$Tag = ""
 )
 
 $python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
@@ -26,7 +28,7 @@ Push-Location $workdir
 try {
     Write-Host "Hakem testi: talimat $Version | model $Model | bolme $Split" -ForegroundColor Cyan
     & $python judge_bench.py run --provider groq --model $Model --version $Version --split $Split `
-        --out "$($Model.Replace('/', '_'))_$($Version)_$($Split).jsonl"
+        --ids "$Ids" --out "$($Model.Replace('/', '_'))_$($Version)_$($Split)$($Tag).jsonl"
 } finally {
     Pop-Location
 }

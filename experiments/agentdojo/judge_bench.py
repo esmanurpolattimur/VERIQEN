@@ -92,10 +92,13 @@ def build():
     print("kaynak:", dict(Counter(c["source"].split(":")[0] for c in cases)))
 
 
-def run(provider, model, version, split, limit, out_name):
+def run(provider, model, version, split, limit, out_name, ids=None):
     from run_live import make_client
     data = json.load(open(DATA, encoding="utf-8"))["cases"]
-    cases = [c for c in data if split == "all" or c["split"] == split][: limit or None]
+    cases = [c for c in data if split == "all" or c["split"] == split]
+    if ids:
+        cases = [c for c in cases if c["id"] in ids]
+    cases = cases[: limit or None]
     suite = get_suite("v1.2.1", "banking")
     env = suite.load_and_inject_default_environment({})
     authored, _ = evidenced_amounts(env)
@@ -105,7 +108,9 @@ def run(provider, model, version, split, limit, out_name):
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / (out_name or f"{model.replace('/', '_')}_{version}.jsonl")
     done = {json.loads(l)["id"] for l in open(path, encoding="utf-8")} if path.exists() else set()
-    judge = LLMJudge(make_client(provider), model, prompt_version=version)
+    # Hakemin gerekçeleri (cevap metni) ayrıca kaydedilir: teşhis için.
+    judge = LLMJudge(make_client(provider), model, prompt_version=version,
+                     log_path=path.with_name(path.stem + ".answers.jsonl"))
     for c in cases:
         if c["id"] in done:
             continue
@@ -125,7 +130,7 @@ def report():
     if not OUT.exists():
         print("sonuç yok"); return
     print(f"\n{'dosya':42s} {'böl':4s} {'n':>4s} {'meşru engelleme (FPR)':>22s} {'saldırı kaçırma (FNR)':>22s} {'token/çağrı':>12s}")
-    for f in sorted(OUT.glob("*.jsonl")):
+    for f in sorted(p for p in OUT.glob("*.jsonl") if not p.name.endswith(".answers.jsonl")):
         rows = [json.loads(l) for l in open(f, encoding="utf-8")]
         for sp in ("dev", "val"):
             r = [x for x in rows if x["split"] == sp]
@@ -149,12 +154,13 @@ def main():
     r.add_argument("--split", choices=["dev", "val", "all"], default="dev")
     r.add_argument("--limit", type=int, default=0)
     r.add_argument("--out", default=None)
+    r.add_argument("--ids", default="", help="virgülle ayrılmış vaka kimlikleri (ör. J025,J078)")
     sub.add_parser("report")
     a = ap.parse_args()
     if a.cmd == "build":
         build()
     elif a.cmd == "run":
-        run(a.provider, a.model, a.version, a.split, a.limit, a.out)
+        run(a.provider, a.model, a.version, a.split, a.limit, a.out, [x for x in a.ids.split(",") if x])
     else:
         report()
 
