@@ -8,7 +8,7 @@ param(
     [Parameter(Mandatory = $true, Position = 0)][ValidateSet("v0", "v1", "v2")][string]$Version,
     [string]$Model = "openai/gpt-oss-20b",
     [ValidateSet("dev", "val", "all")][string]$Split = "dev",
-    [string]$Ids = "",
+    [string[]]$Ids = @(),
     [string]$Tag = ""
 )
 
@@ -27,8 +27,10 @@ $env:PYTHONIOENCODING = "utf-8"
 Push-Location $workdir
 try {
     Write-Host "Hakem testi: talimat $Version | model $Model | bolme $Split" -ForegroundColor Cyan
-    & $python judge_bench.py run --provider groq --model $Model --version $Version --split $Split `
-        --ids "$Ids" --out "$($Model.Replace('/', '_'))_$($Version)_$($Split)$($Tag).jsonl"
+    $pyArgs = @("judge_bench.py", "run", "--provider", "groq", "--model", $Model, "--version", $Version,
+                "--split", $Split, "--out", "$($Model.Replace('/', '_'))_$($Version)_$($Split)$($Tag).jsonl")
+    if ($Ids.Count -gt 0) { $pyArgs += @("--ids", ($Ids -join ",")) }
+    & $python @pyArgs
 } finally {
     Pop-Location
 }
