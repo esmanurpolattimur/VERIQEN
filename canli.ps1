@@ -2,6 +2,8 @@
 # Kullanim (D:\verqien klasorunde):   .\canli.ps1 VERIQEN-T
 #                                     .\canli.ps1 VERIQEN-SI
 #                                     .\canli.ps1 B3 -Model openai/gpt-oss-120b -LogDir results/live/run4
+#                                     .\canli.ps1 VERIQEN-T -InjectionTasks injection_task_0,injection_task_4
+# Birden fazla gorev/saldiri VIRGULLE ayrilir (bosluk degil).
 # Klasore gitme ve sanal ortami acma islerini kendisi yapar. Anahtari dosyaya yazmaz.
 param(
     [Parameter(Mandatory = $true, Position = 0)][string]$System,
