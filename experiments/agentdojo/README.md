@@ -16,6 +16,7 @@ VERIQEN kapısını AgentDojo'nun **Banking** paketine (v1.2.1; 16 kullanıcı g
 | VERIQEN-SI\* | S + kâhin niyet (üst sınır; yalnız `replay_eval.py`) |
 | **VERIQEN-T** | SI + **niyete bağlı yetenek belirteçleri** (`capability.py`): para işlemi yalnız kullanıcı isteğinde yazılı IBAN'a, izinli türde, limit altında ve **bir kez** hakemsiz geçer (VERIQEN 2.0, `docs/v2/01`) |
 | VERIQEN-TN | T + adıyla anılan alıcıların kullanıcının kendi geçmişinden çözülmesi (val'de fazla izin verdiği görüldü; olumsuz sonuç) |
+| **VERIQEN-T2** | T + kanıta bağlı tutar, sınırlı köken eşleşmesi ve açık parola, IBAN normalizasyonu, bölüm sınırları, hakem önbelleği. **Kilitli set v1 açıldıktan sonra** orada bulunan açıklara göre yapıldı (`docs/v2/03`) |
 
 ## Kurulum
 

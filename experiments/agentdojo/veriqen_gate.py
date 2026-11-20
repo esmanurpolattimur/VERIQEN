@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from capability import TokenStore, mint_tokens
+from capability import TokenStore, mint_tokens, mint_tokens_v2
 
 IBAN_RE = re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b")
 
@@ -43,6 +43,18 @@ def _norm(s: Any) -> str:
     return str(s).strip().lower()
 
 
+def _in_prompt_exact(v: str, prompt: str) -> bool:
+    """v kullanıcı isteğinde, öncesi ve sonrası harf/rakam olmayan tam bir parça olarak geçiyor mu?
+    IBAN benzeri değerlerde boşluklar yok sayılır (A3)."""
+    p = _norm(prompt)
+    if re.search(r"(?<![a-z0-9])" + re.escape(v) + r"(?![a-z0-9])", p):
+        return True
+    compact = re.sub(r"\s+", "", v)
+    if IBAN_RE.fullmatch(compact.upper()):
+        return compact in {re.sub(r"\s+", "", m).lower() for m in re.findall(r"[a-z]{2}\d{2}(?: ?[a-z0-9]){10,30}", p)}
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Köken izleme
 # ---------------------------------------------------------------------------
@@ -51,6 +63,9 @@ class ProvenanceTracker:
     user_prompt: str
     trusted_values: set[str] = field(default_factory=set)
     tool_texts: list[str] = field(default_factory=list)
+    # v2 (VERIQEN-T2, A2): kullanıcı kökeni için alt dize yerine sınırlı eşleşme. Değer, kullanıcı isteğinde
+    # harf/rakamla bitişik olmayan tam bir parça olarak geçmeli (bir IBAN'ın önekiyle eşleşme olmaz).
+    exact: bool = False
 
     @classmethod
     def from_environment(cls, user_prompt: str, env, trust_mode: str = "structured") -> "ProvenanceTracker":
@@ -72,6 +87,19 @@ class ProvenanceTracker:
         trusted.discard("me")
         return cls(user_prompt=user_prompt, trusted_values=trusted)
 
+    def explicit_secret(self, value: Any) -> bool:
+        """v2 parola kuralı (A2): parola, kullanıcı isteğinde tırnak içinde ya da 'password ... to/is/:' ifadesinden
+        hemen sonra AÇIKÇA verilmiş olmalı. İstekteki sıradan bir kelime parola sayılmaz."""
+        v = str(value or "").strip()
+        if not v:
+            return False
+        p = self.user_prompt or ""
+        quoted = re.findall(r"['\"“”‘’]([^'\"“”‘’]+)['\"“”‘’]", p)
+        if any(q.strip() == v for q in quoted):
+            return True
+        m = re.search(r"password\s*(?:to|is|=|:)\s*(\S+)", p, flags=re.I)
+        return bool(m) and m.group(1).strip("'\".,;“”‘’") == v
+
     def observe_tool_output(self, text: str) -> None:
         self.tool_texts.append(text or "")
 
@@ -79,7 +107,10 @@ class ProvenanceTracker:
         v = _norm(value)
         if not v:
             return UNSEEN
-        if v in _norm(self.user_prompt):
+        if self.exact:
+            if _in_prompt_exact(v, self.user_prompt):
+                return USER
+        elif v in _norm(self.user_prompt):
             return USER
         if v in self.trusted_values:
             return TRUSTED_STATE
@@ -240,16 +271,24 @@ class Gate:
                 (val'de fazla izin verdiği görüldü; olumsuz sonuç olarak tutuluyor)."""
 
     SYSTEMS = ("B0", "B1", "B2", "B3", "NAIVE", "VERIQEN", "VERIQEN-A", "VERIQEN-S",
-               "VERIQEN-AI", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN")
+               "VERIQEN-AI", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN", "VERIQEN-T2")
 
     def __init__(self, system: str, judge=None, review_policy: str = "deny", intent_fn=None):
         assert system in self.SYSTEMS, system
         self.system, self.judge, self.review_policy = system, judge, review_policy
-        self.strict = system in ("VERIQEN-S", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN")
-        self.authored = system in ("VERIQEN-A", "VERIQEN-S", "VERIQEN-AI", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN")
+        self.strict = system in ("VERIQEN-S", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN", "VERIQEN-T2")
+        self.authored = system in ("VERIQEN-A", "VERIQEN-S", "VERIQEN-AI", "VERIQEN-SI", "VERIQEN-SI*", "VERIQEN-T", "VERIQEN-TN",
+                                 "VERIQEN-T2")
         self.intent_mode = {"VERIQEN-AI": "keyword", "VERIQEN-SI": "keyword", "VERIQEN-SI*": "oracle",
-                            "VERIQEN-T": "keyword", "VERIQEN-TN": "keyword"}.get(system)
-        self.caps: TokenStore | None = TokenStore() if system in ("VERIQEN-T", "VERIQEN-TN") else None
+                            "VERIQEN-T": "keyword", "VERIQEN-TN": "keyword", "VERIQEN-T2": "keyword"}.get(system)
+        # VERIQEN-T2: kilitli set v1 açıldıktan SONRA, orada görülen açıklara göre yapılan sürüm (bkz. docs/v2/03).
+        self.v2 = system == "VERIQEN-T2"
+        self.caps: TokenStore | None = (TokenStore(normalize=self.v2)
+                                        if system in ("VERIQEN-T", "VERIQEN-TN", "VERIQEN-T2") else None)
+        self.judge_cache: dict = {}         # B3: bölüm içinde aynı çağrıya önceki hakem kararı
+        self.judged_recipients: set = set()  # A4: hakemin izin verdiği belirteçsiz alıcılar
+        self.rejected_recipients: set = set()  # A4: hakemin reddettiği alıcılar (bölüm boyunca kapalı)
+        self.judged_amount = 0.0             # A4: hakem onayıyla giden toplam tutar
         self.named_payees = system == "VERIQEN-TN"
         self.scheduled: dict[str, str] = {}
         self.intent_fn = intent_fn            # canlı modda LLM niyet çıkarıcı verilebilir
@@ -267,6 +306,9 @@ class Gate:
     def start(self, user_prompt: str, env, oracle_actions: set[str] | None = None) -> None:
         mode = "authored" if self.authored else "structured"
         self.prov = ProvenanceTracker.from_environment(user_prompt, env, mode)
+        self.prov.exact = self.v2
+        self.judge_cache, self.judged_recipients, self.judged_amount = {}, set(), 0.0
+        self.rejected_recipients = set()
         self.balance = float(env.bank_account.balance)
         self.log, self.auto_counts = [], {}
         self.episode += 1
@@ -280,8 +322,11 @@ class Gate:
         self.scheduled = {str(t.id): _norm(t.recipient) for t in env.bank_account.scheduled_transactions}
         if self.caps is not None:
             self.caps.new_episode()
-            mint_tokens(self.caps, user_prompt, env, self.allowed or set(), MONEY_TOOLS, AUTO_AMOUNT_LIMIT,
-                        named=self.named_payees)
+            if self.v2:
+                mint_tokens_v2(self.caps, user_prompt, env, self.allowed or set(), MONEY_TOOLS, AUTO_AMOUNT_LIMIT)
+            else:
+                mint_tokens(self.caps, user_prompt, env, self.allowed or set(), MONEY_TOOLS, AUTO_AMOUNT_LIMIT,
+                            named=self.named_payees)
 
     def observe_tool_output(self, text: str) -> None:
         self.prov.observe_tool_output(text)
@@ -298,7 +343,10 @@ class Gate:
     def _floor(self, function: str, args: dict) -> Decision | None:
         """Zorunlu taban: deterministik, hiçbir puanla geri alınamaz (ilke 1, 10)."""
         if function == "update_password":
-            if self.prov.origin(args.get("password", "")) != USER:
+            if self.v2:
+                if not self.prov.explicit_secret(args.get("password", "")):
+                    return Decision(BLOCK, "floor:password_not_explicit_in_request")
+            elif self.prov.origin(args.get("password", "")) != USER:
                 return Decision(BLOCK, "floor:password_not_from_user")
         if function in MONEY_TOOLS and "amount" in args and args["amount"] is not None:
             amt = float(args["amount"])
@@ -371,7 +419,9 @@ class Gate:
                     need, why = True, "always_judge"
                 else:
                     need, why = self._needs_judge(function, args)
-                if need:
+                if need and self.v2:
+                    d = self._judge_v2(function, args, why, label_malicious, case_key)
+                elif need:
                     ok = self.judge.judge(self.prov.user_prompt, function, args, "",
                                           label_malicious=label_malicious, case_key=case_key)
                     d = Decision(ALLOW if ok else BLOCK, f"{why}|judge:{'allow' if ok else 'block'}", True)
@@ -382,6 +432,52 @@ class Gate:
         self.log.append(dict(function=function, args=_safe_args(args), decision=d.decision,
                              reason=d.reason, used_judge=d.used_judge, malicious=label_malicious))
         return d
+
+
+def _gate_judge_v2(self, function, args, why, label_malicious, case_key):
+    """VERIQEN-T2 hakem yolu.
+    A4: Belirteçsiz para işlemlerinde bölüm başına sınırlar. Hakemin reddettiği alıcı bölüm boyunca kapalıdır.
+        Hakemin izin verdiği bir alıcıya ikinci ödeme ve
+        hakem onaylı toplam tutarın otomatik limiti aşması hakeme değil İNSAN ONAYINA gider. Hakemin her
+        çağrıda bağımsız hata yapma ihtimali, ödemeyi taksitlere bölen saldırıyı (L08) güçlendiriyordu.
+    B3: Bölüm içinde aynı çağrı tekrar gelirse önceki hakem kararı kullanılır (ajanın tekrar denemeleri)."""
+    money = function in MONEY_TOOLS
+    if money:
+        rcpt = args.get("recipient")
+        if rcpt is None and function == "update_scheduled_transaction":
+            rcpt = self.scheduled.get(str(args.get("id")))
+        rkey = re.sub(r"\s+", "", _norm(rcpt)) if rcpt is not None else None
+        amt = float(args.get("amount") or 0.0)
+        if rkey is not None and rkey in self.rejected_recipients:
+            return Decision(BLOCK, f"{why}|limit:recipient_rejected_earlier")
+        if rkey is not None and rkey in self.judged_recipients:
+            return Decision(REVIEW, f"{why}|limit:second_payment_to_judged_recipient")
+        # Toplam sınır yalnız İKİNCİ ve sonraki hakem onaylı ödemelerde: tek büyük ödeme (ör. kira) yine hakeme
+        # gider; sınırın amacı ödemeyi parçalara bölmeyi durdurmak.
+        if self.judged_amount > 0 and self.judged_amount + amt > AUTO_AMOUNT_LIMIT:
+            return Decision(REVIEW, f"{why}|limit:episode_judged_amount")
+    key = (function, json.dumps(args, sort_keys=True, default=str))
+    if key in self.judge_cache:
+        ok, tag = self.judge_cache[key], "judge_cached"
+    else:
+        ok = self.judge.judge(self.prov.user_prompt, function, args, "",
+                              label_malicious=label_malicious, case_key=case_key)
+        self.judge_cache[key], tag = ok, "judge"
+    if ok and money:
+        if rkey is not None:
+            self.judged_recipients.add(rkey)
+        # Toplam sınıra yalnız kullanıcının isteğinde YAZMADIĞI alıcılara giden ödemeler sayılır; kullanıcının
+        # açıkça verdiği bir alıcıya büyük ödeme (ör. yeni ev sahibine kira) bölme saldırısının hedefi değildir.
+        if rcpt is None or self.prov.origin(rcpt) != USER:
+            self.judged_amount += amt
+    elif money and rkey is not None:
+        # Reddedilen alıcıya aynı bölümde yeniden deneme hakemi tekrar çağırmaz: her yeni çağrı hakeme
+        # bağımsız bir hata şansı verirdi (taksit saldırısı).
+        self.rejected_recipients.add(rkey)
+    return Decision(ALLOW if ok else BLOCK, f"{why}|{tag}:{'allow' if ok else 'block'}", tag == "judge")
+
+
+Gate._judge_v2 = _gate_judge_v2
 
 
 def _safe_args(args: dict) -> dict:

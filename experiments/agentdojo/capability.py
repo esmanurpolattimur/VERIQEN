@@ -67,6 +67,10 @@ class CapabilityToken:
     uses_left: int
     episode: int
     source: str                        # "user_iban" | "named_payee:<ad>"
+    # v2 (VERIQEN-T2): tutar da kanıta bağlı. amount_bound=False iken eski davranış (yalnız üst sınır).
+    amount_bound: bool = False
+    allowed_amounts: tuple[float, ...] = ()   # kullanıcı isteğinde ya da kullanıcının kendi işlemlerinde geçen tutarlar
+    refund_cap: float | None = None           # bu alıcının kullanıcıya gönderdiği toplam (iade üst sınırı)
     signature: str = ""
 
     def payload(self) -> bytes:
@@ -79,7 +83,11 @@ class TokenStore:
     key: bytes = field(default_factory=lambda: secrets.token_bytes(32))
     tokens: list[CapabilityToken] = field(default_factory=list)
     episode: int = 0
+    normalize: bool = False            # v2: IBAN'daki boşlukları yok say (A3)
     _ids: Any = field(default_factory=lambda: itertools.count(1))
+
+    def _key(self, x: Any) -> str:
+        return re.sub(r"\s+", "", _norm(x)) if self.normalize else _norm(x)
 
     # --- imza ---
     def _sign(self, t: CapabilityToken) -> str:
@@ -97,10 +105,13 @@ class TokenStore:
         self.episode += 1
         self.tokens = []
 
-    def issue(self, operations, recipient: str, max_amount: float, source: str, uses: int = 1) -> CapabilityToken:
+    def issue(self, operations, recipient: str, max_amount: float, source: str, uses: int = 1,
+              amount_bound: bool = False, allowed_amounts=(), refund_cap: float | None = None) -> CapabilityToken:
         t = CapabilityToken(token_id=f"cap-{self.episode}-{next(self._ids)}", operations=tuple(sorted(operations)),
-                            recipient=_norm(recipient), max_amount=float(max_amount), uses_left=int(uses),
-                            episode=self.episode, source=source)
+                            recipient=self._key(recipient), max_amount=float(max_amount), uses_left=int(uses),
+                            episode=self.episode, source=source, amount_bound=amount_bound,
+                            allowed_amounts=tuple(sorted({round(float(a), 2) for a in allowed_amounts})),
+                            refund_cap=refund_cap)
         self._resign(t)
         self.tokens.append(t)
         return t
@@ -110,7 +121,7 @@ class TokenStore:
         """Çağrıya tam uyan, geçerli bir belirteç arar. (belirteç, neden) döndürür; belirteç yoksa neden açıklar."""
         if recipient is None:
             return None, "cap:no_recipient"
-        rcpt = _norm(recipient)
+        rcpt = self._key(recipient)
         reasons = []
         for t in self.tokens:
             if t.recipient != rcpt:
@@ -125,6 +136,8 @@ class TokenStore:
                 reasons.append("cap:used_up"); continue
             if amount is not None and float(amount) > t.max_amount:
                 reasons.append("cap:amount_over_limit"); continue
+            if t.amount_bound and amount is not None and not _amount_ok(float(amount), t):
+                reasons.append("cap:amount_not_evidenced"); continue
             return t, f"cap:{t.token_id}"
         return None, (reasons[0] if reasons else "cap:no_token_for_recipient")
 
@@ -133,11 +146,71 @@ class TokenStore:
         self._resign(t)
 
 
+def _amount_ok(amount: float, t: CapabilityToken) -> bool:
+    """v2 tutar kuralı (A1). Tutar kanıta dayanmalı:
+      * kullanıcı isteğinde parasal bir tutar olarak geçiyor, ya da kullanıcının KENDİ başlattığı bir işlemin tutarı; veya
+      * alıcı kullanıcıya para göndermişse, tutar ondan alınan toplamı aşmıyor (iade).
+    Kanıta dayanmayan tutar belirteci tüketmez; çağrı hakeme gider."""
+    a = round(amount, 2)
+    if any(abs(a - x) < 0.005 for x in t.allowed_amounts):
+        return True
+    return t.refund_cap is not None and a <= t.refund_cap + 0.005
+
+
 # ---------------------------------------------------------------------------
 # Belirteç üretimi (yalnız güvenilir kaynaklardan)
 # ---------------------------------------------------------------------------
 def prompt_ibans(user_prompt: str) -> set[str]:
     return {_norm(m) for m in IBAN_RE.findall(user_prompt or "")}
+
+
+# A3: IBAN boşluklu yazılmış olabilir ("GB29 NWBK 6016 ..."). Boşluklar atılarak normalize edilir.
+SPACED_IBAN_RE = re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]){10,30}\b")
+
+# A1: Kullanıcı isteğindeki PARASAL tutarlar. Posta kodu ya da kapı numarası gibi sayıları almamak için
+# yalnız para birimi işaretinin yanındaki, "is/of/to/pay/send" sonrasındaki ya da iki ondalıklı sayılar.
+MONEY_RE = re.compile(r"(?:[$€£]\s?|\b(?:is|of|to|pay|send|refund)\s+)(\d+(?:\.\d+)?)"
+                      r"|(\d+\.\d{2})\b"
+                      r"|(\d+(?:\.\d+)?)\s?(?:€|\$|£|eur|euro|euros|usd|dollars?)\b", re.I)
+
+
+def prompt_ibans_v2(user_prompt: str) -> set[str]:
+    return {re.sub(r"\s+", "", m).lower() for m in SPACED_IBAN_RE.findall(user_prompt or "")}
+
+
+def prompt_amounts(user_prompt: str) -> set[float]:
+    out = set()
+    for m in MONEY_RE.finditer(user_prompt or ""):
+        v = next(g for g in m.groups() if g)
+        out.add(round(float(v), 2))
+    return out
+
+
+def evidenced_amounts(env) -> tuple[set[float], dict[str, float]]:
+    """Kullanıcının kendi başlattığı işlemlerin tutarları ve alıcı başına kullanıcıya gelen toplam."""
+    acct = env.bank_account
+    own = {_norm(acct.iban), "me"}
+    authored, received = set(), {}
+    for t in list(acct.transactions) + list(acct.scheduled_transactions):
+        if _norm(t.sender) in own:
+            authored.add(round(float(t.amount), 2))
+        elif _norm(t.recipient) in own:
+            k = re.sub(r"\s+", "", _norm(t.sender))
+            received[k] = received.get(k, 0.0) + float(t.amount)
+    return authored, received
+
+
+def mint_tokens_v2(store: TokenStore, user_prompt: str, env, allowed_operations: set[str], money_tools: set[str],
+                   max_amount: float) -> list[CapabilityToken]:
+    """VERIQEN-T2: IBAN normalizasyonu (A3) ve kanıta bağlı tutar (A1)."""
+    ops = tuple(sorted(set(allowed_operations) & set(money_tools)))
+    if not ops:
+        return []
+    authored, received = evidenced_amounts(env)
+    amounts = prompt_amounts(user_prompt) | authored
+    return [store.issue(ops, iban, max_amount, "user_iban", amount_bound=True, allowed_amounts=amounts,
+                        refund_cap=received.get(iban))
+            for iban in sorted(prompt_ibans_v2(user_prompt))]
 
 
 def named_payees(user_prompt: str, env) -> dict[str, str]:
