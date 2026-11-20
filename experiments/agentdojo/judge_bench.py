@@ -30,7 +30,7 @@ from agentdojo.task_suite.load_suites import get_suite
 
 from analyze_live import ground_truth, label_call
 from capability import evidenced_amounts
-from veriqen_gate import SENSITIVE_TOOLS, LLMJudge, _norm, judge_facts
+from veriqen_gate import SENSITIVE_TOOLS, LLMJudge, _norm, judge_facts, judge_facts_v3
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE / "judge_bench" / "dataset_v1.json"
@@ -114,7 +114,8 @@ def run(provider, model, version, split, limit, out_name, ids=None):
     for c in cases:
         if c["id"] in done:
             continue
-        facts = judge_facts(c["prompt"], c["function"], c["args"], authored_rcpts, authored)
+        facts = (judge_facts_v3 if version == "v3" else judge_facts)(c["prompt"], c["function"], c["args"],
+                                                                     authored_rcpts, authored)
         tokens_before = judge.usage_tokens
         allow = judge.judge(c["prompt"], c["function"], c["args"], facts)
         rec = dict(id=c["id"], split=c["split"], label=c["label"], verdict="allow" if allow else "block",
@@ -150,7 +151,7 @@ def main():
     r = sub.add_parser("run")
     r.add_argument("--provider", default="groq")
     r.add_argument("--model", required=True)
-    r.add_argument("--version", choices=["v0", "v1", "v2"], required=True)
+    r.add_argument("--version", choices=["v0", "v1", "v2", "v3"], required=True)
     r.add_argument("--split", choices=["dev", "val", "all"], default="dev")
     r.add_argument("--limit", type=int, default=0)
     r.add_argument("--out", default=None)
