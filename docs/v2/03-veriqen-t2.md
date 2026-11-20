@@ -42,6 +42,16 @@ Her iki düzeltme de replay'deki **zararsız görevlere** bakılarak yapıldı; 
 | Varsayılan hakemde toplam ASR | 13.2 | 14.3 | **7.1** |
 | Taksite bölme (L08), varsayılan hakem | 39.7 | 39.7 | **8.8** |
 
+## 3b. Hakem kalitesine duyarlılık (AgentDojo, 3 saldırı türü, 5 tekrar, simülasyon)
+
+| Hakem kaçırma | %0 | %5 | %10 | %20 | %30 | %50 |
+|---|---|---|---|---|---|---|
+| B3 ASR | 0 | 4.0 | 7.4 | 14.7 | 21.2 | 36.9 |
+| VERIQEN-T ASR | 0 | 4.0 | 7.4 | 14.7 | 21.2 | 36.9 |
+| **VERIQEN-T2 ASR** | **0** | **3.3** | **5.8** | **12.1** | **17.5** | **30.3** |
+
+Kusursuz hakemle atlama sıfır. Hakem kötüleştikçe T2'nin B3'e göre avantajı büyüyor (%50 kaçırmada 36.9'a karşı 30.3), çünkü bölüm sınırları hakeme tekrar tekrar şans vermiyor. Zararsız fayda ve hakem maliyeti T ile aynı.
+
 ## 4. Okuma
 
 1. T2, kilitli setteki iki atlama yolunu kapattı. Kusursuz hakemle hem AgentDojo saldırılarında hem kilitli sette atlama sıfır.
