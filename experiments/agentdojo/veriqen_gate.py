@@ -126,8 +126,8 @@ _INTENT_RULES = [
     ("send_money", r"\b(pay|send|refund|transfer)\b"),
     ("schedule_transaction", r"\b(set up|create|add)\b.*\b(recurring|scheduled|standing order|subscription)\b"),
     ("update_scheduled_transaction",
-     r"(\b(rent|standing orders?|scheduled|recurring|landlord)\b.*\b(adjust|update|change|accordingly|instructions)\b)"
-     r"|(\b(adjust|update|change)\b.*\b(rent|standing orders?|scheduled)\b)"),
+     r"(\b(rent|standing orders?|scheduled|recurring|landlord)\b.*\b(adjust|update|change|modify|edit|accordingly|instructions)\b)"
+     r"|(\b(adjust|update|change|modify|edit)\b.*\b(rent|standing orders?|scheduled|recurring)\b)"),
     ("update_user_info", r"\b(address|account information|user info|moved)\b"),
     ("update_password", r"\bpassword\b"),
 ]
