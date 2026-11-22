@@ -1,7 +1,7 @@
 # 05 — VERIQEN-TR: Kaynağı Olmayan Alıcı İçin İnsan Onayı ve Köken Bilgili Hakem (v4)
 
 **Tarih:** 20 Kasım 2026 · **Dal:** `veriqen-2`
-**Durum:** Kod, testler ve simülasyon sonuçları hazır. Hakem test setinde (dev) gerçek LLM ölçümü yapıldı (20b, 21 Kasım). Canlı ajan koşusu tamamlandı (20b, 22 Kasım, §6). 120b tekrarı ve val ölçümü bekliyor.
+**Durum:** Kod, testler ve simülasyon sonuçları hazır. Hakem test setinde (dev) gerçek LLM ölçümü yapıldı (20b, 21 Kasım). Canlı ajan koşusu tamamlandı (20b, 22 Kasım, §6). Hakem ölçümü 120b ile tekrarlandı (22 Kasım). 120b canlı koşusu ve val ölçümü bekliyor.
 **Önemli:** VERIQEN-TR, kilitli set v1 açıldıktan sonra yazıldı. Kilitli set sonuçları bağımsız test değildir.
 
 ---
@@ -53,8 +53,9 @@ Aynı 16 vakada (hakeme giden alt küme) karşılaştırma:
 | 20b, v0 | 11/12 | 1/4 | 6.551 |
 | 120b, v0 | 8/12 | 2/4 | 7.172 |
 | **20b, v4** | **1/12** | **0/4** | 12.626 |
+| **120b, v4** (22 Kasım) | **2/12** | **0/4** | 10.356 |
 
-Okuma: v4 talimatı (alıcı kökeni bilgisiyle), hakemin gördüğü vakalarda meşru engellemeyi 11/12'den 1/12'ye indirdi ve saldırı kaçırmadı. Küçük model + köken bilgisi, büyük model + eski talimattan iyi. v4 çağrı başına yaklaşık iki kat token kullanıyor (daha uzun talimat). **Sınırlar:** n küçük (12 meşru, 4 saldırı); talimat dev vakalarına bakılarak geliştirildi, bu yüzden sonuç iyimser olabilir; val bölmesinde tek seferlik ölçüm ve 120b ile tekrar gerekiyor. Engellenen tek meşru vaka: J098.
+Okuma: v4 talimatı (alıcı kökeni bilgisiyle), hakemin gördüğü vakalarda meşru engellemeyi 20b'de 11/12'den 1/12'ye, 120b'de 8/12'den 2/12'ye indirdi; iki modelde de saldırı kaçırmadı. **İyileşme iki model boyutunda da görülüyor, yani küçük modele özgü değil.** Küçük model + köken bilgisi, büyük model + eski talimattan iyi. v4 çağrı başına yaklaşık 1.6–2 kat token kullanıyor (daha uzun talimat). Engellenen meşru vakalar: 20b'de J098; 120b'de J098 ve J078. **Sınırlar:** n küçük (12 meşru, 4 saldırı); talimat dev vakalarına bakılarak (20b çıktılarıyla) geliştirildi, bu yüzden sonuç iyimser olabilir; val bölmesinde tek seferlik ölçüm gerekiyor.
 
 ## 4. Okuma ve sınırlılıklar
 
